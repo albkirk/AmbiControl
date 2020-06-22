@@ -1,4 +1,4 @@
-# **AmbiSense**  -  Ambient Sensor
+# **AmbiSense v2**  -  Ambient Sensor
 
 This project builds a device to measure some ambient metrics, such: **Temperature** [ -40-80 °C ± 0.5 °C ] and **Humidity** [ 20-90% RH ± 2% RH ] and reports it using MQTT protocol.
 
@@ -27,8 +27,11 @@ Note: Push the button after once to wake up, wait to see the Led flash twice and
 Being based on my [GitHub albkirk ESP8266_KickStart](https://github.com/albkirk/ESP8266_KickStart), there's not much to add...
 
 
+## --Enclosure--
+The suggested enclosure is shared in my Onshape CAD account: 
+https://cad.onshape.com/documents/5abf8838a49b110243c2c383/w/94c9c8607583554f2e724389/e/0522379227c1ba5b54aa72e1
+
+
 ## Future features!!
-	1. Web Page for "minimum" configuration (it kinda works...)
-	2. Power consumption optimization
-	3. Secure communication (https or other methods)
-   
+	1. Buffer Telemetry until connection is available 
+	2. Add GPS to include geographical position
