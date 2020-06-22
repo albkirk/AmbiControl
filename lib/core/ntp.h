@@ -15,7 +15,7 @@ struct strDateTime
 };
 #endif
 
-strDateTime DateTime;                         // Global DateTime structure
+static strDateTime DateTime;                  // Global DateTime structure
 strDateTime LastDateTime = {25, 61, 61, 1, 13, 32, 8};
 static const uint8_t monthDays[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 static const String WeekDays[] = {"Weekends", "SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT", "Daily", "Work Days"};
@@ -119,7 +119,7 @@ void getNTPtime()
 {
     UTCTimeStamp = 0;                             // Resetting value to 0
 
-    if (WIFI_state != WL_CONNECTED) telnet_println( "ERROR! ==> WiFi NOT Connected!" );
+    if (WIFI_state != WL_CONNECTED) telnet_println( "NTP ERROR! ==> WiFi NOT Connected!" );
     else {
           UDPNTPClient.begin(2390);               // Port for NTP receive
           IPAddress timeServerIP;
@@ -188,9 +188,9 @@ void curDateTime() {
     //telnet_println("Current Local Time: " + String(DateTime.hour) + ":" + String(DateTime.minute) + ":" + String(DateTime.second));
 }
 
-byte DateTime_hour(void) {return DateTime.hour;}
-byte DateTime_minute(void) {return DateTime.minute;}
-byte DateTime_second(void) {return DateTime.second;}
+//byte DateTime_hour(void) {return DateTime.hour;}
+//byte DateTime_minute(void) {return DateTime.minute;}
+//byte DateTime_second(void) {return DateTime.second;}
 
 
 void ntp_setup () {

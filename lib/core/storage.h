@@ -60,21 +60,22 @@ void storage_print() {
   Serial.printf("Device Name: %s and Location: %s\n", config.DeviceName, config.Location);
   Serial.printf("ON time[sec]: %d  -  SLEEP Time[min]: %d -  DEEPSLEEP enabled: %d\n", config.ONTime, config.SLEEPTime, config.DEEPSLEEP);
   Serial.printf("LED enabled: %d   -  TELNET enabled: %d  -  OTA enabled: %d  -  WEB enabled: %d\n", config.LED, config.TELNET, config.OTA, config.WEB);
-  Serial.printf("WiFi STA Mode: %d\t", config.STAMode);
-  Serial.printf("WiFi SSID: %s\t", config.ssid);
-  Serial.printf("WiFi Key: %s\n", config.WiFiKey);
-
+  Serial.printf("WiFi AP Mode: %d  -  WiFi STA Mode: %d   -  WiFi SSID: %s  -  WiFi Key: %s\n", config.APMode, config.STAMode, config.ssid, config.WiFiKey);
+  
   Serial.printf("DHCP enabled: %d\n", config.DHCP);
   if(!config.DHCP) {
       Serial.printf("IP: %d.%d.%d.%d\t", config.IP[0],config.IP[1],config.IP[2],config.IP[3]);
       Serial.printf("Mask: %d.%d.%d.%d\t", config.Netmask[0],config.Netmask[1],config.Netmask[2],config.Netmask[3]);
       Serial.printf("Gateway: %d.%d.%d.%d\n", config.Gateway[0],config.Gateway[1],config.Gateway[2],config.Gateway[3]);
   }
+  Serial.printf("MQTT Server: %s  -  Port: %ld  -  Secure: %d  -  ", config.MQTT_Server, config.MQTT_Port, config.MQTT_Secure);
+  Serial.printf("MQTT User: %s  -  MQTT Pass: %s\n", config.MQTT_User, config.MQTT_Password);
   Serial.printf("NTP Server Name: %s\t", config.NTPServerName);
   Serial.printf("NTP update every %ld minutes.\t", config.Update_Time_Via_NTP_Every);
   Serial.printf("Timezone: %ld  -  DayLight: %d\n", config.TimeZone, config.isDayLightSaving);
 
   Serial.printf("Remote Allowed: %d\t", config.Remote_Allow);
+  Serial.printf("WEB User: %s  -  WEB Pass: %s\n", config.WEB_User, config.WEB_Password);
   Serial.printf("SWITCH default status: %d\t", config.SWITCH_Default);
   Serial.printf("Temperature Correction: %f\t", config.Temp_Corr);
   Serial.printf("LDO Voltage Correction: %f\n", config.LDO_Corr);

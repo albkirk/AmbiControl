@@ -25,6 +25,9 @@ float Lux = 0.0;                            // Variable
 float Tempe_MAX = -100.0;                   // Variable
 float Tempe_MIN = 100.0;                    // Variable
 
+//JSON Variables
+char ambient_jsonString[256];
+DynamicJsonDocument ambient_doc(256);
 
 void I2C_scan() {
     byte error, address;
@@ -168,7 +171,7 @@ float getLux (byte pin = 36, int Nmeasures = Number_of_measures, float Max_val =
 void ambient_get_data() {
     Temperature = getTemperature();
     Humidity = getHumidity();
-    Lux = getLux();
+    //Lux = getLux();
 }
 
 void ambient_send_data() {
@@ -188,16 +191,32 @@ void ambient_send_data() {
             mqtt_publish(mqtt_pathtele(), "Humidade", String(Humidity));
     };
           
-    telnet_print("Lux: " + String(Lux) + " % \t");
-    mqtt_publish(mqtt_pathtele(), "Lux", String(Lux));
+    //telnet_print("Lux: " + String(Lux) + " % \t");
+    //mqtt_publish(mqtt_pathtele(), "Lux", String(Lux));
     telnet_println("");
 }
 
+void ambient_send_json () {
+    String temp_Timestamp, temp_BatLevel;
+    char fbat[3];        // long enough to hold complete floating string
 
+    // Purge old JSON data and Load new values
+    ambient_doc.clear();
+    ambient_doc["Timestamp"] = curUnixTime();
+    ambient_doc["BatLevel"] = String(dtostrf(getVoltage(),3,0,fbat)).toFloat();
+    ambient_doc["RSSI"] = getRSSI();
+    ambient_doc["Temperature"] = Temperature;
+    ambient_doc["Humidity"] = Humidity;
+
+
+    serializeJson(ambient_doc, ambient_jsonString);             //Serialize JSON data to string
+    // Serial.print("jsonString ready to Publish: "); Serial.println((jsonString));
+    telnet_println("Telemetry: " + String(ambient_jsonString) + " % \t");
+    mqtt_publish(mqtt_pathtele(), "Telemetry", String(ambient_jsonString));
+}
 
 void ambient_setup() {
     if (DHTPIN>=0 || SDAPIN>=0) {
-        TIMER = 15;                                   // Default TIMER value (15 minutes) to get Ambient data.
         // Start Ambient Sensor
         if (DHTTYPE == DHT_11 || DHTTYPE == DHT_22) dht_val.begin();       // required if using Adafruit Library
         if (DHTTYPE == AM_2320) {
@@ -210,6 +229,7 @@ void ambient_setup() {
 void ambient_data() {
     if (DHTPIN>=0 || SDAPIN>=0) {
         ambient_get_data();
-        ambient_send_data();
+        ambient_send_json();
+        //ambient_send_data();
     }
 }

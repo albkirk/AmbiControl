@@ -14,7 +14,7 @@ void on_message(const char* topic, byte* payload, unsigned int msg_length) {
     telnet_println("Payload: " + String((char*)msg));
 
     // Decode JSON request
-    StaticJsonDocument<200> data;
+    StaticJsonDocument<256> data;
     DeserializationError JSONerror = deserializeJson(data, msg);
 
     if (JSONerror) {
@@ -39,11 +39,12 @@ void on_message(const char* topic, byte* payload, unsigned int msg_length) {
     if ( reqparam == "ONTime") { config.ONTime = data["value"];storage_write(); }
     if ( reqparam == "ExtendONTime") if (bool(data["value"]) == true) Extend_time = 60;
     if ( reqparam == "LED") config.LED = bool(data["value"]);
-    if ( reqparam == "TELNET") { config.TELNET = bool(data["value"]); storage_write(); mqtt_restart(); }
-    if ( reqparam == "OTA") { config.OTA = bool(data["value"]); storage_write(); mqtt_restart(); }
-    if ( reqparam == "WEB") { config.WEB = bool(data["value"]); storage_write(); mqtt_restart(); }
-    if ( reqparam == "DHCP") { config.DHCP = bool(data["value"]); storage_write(); mqtt_restart(); }
+    if ( reqparam == "TELNET") { config.TELNET = bool(data["value"]); storage_write(); telnet_setup(); }
+    if ( reqparam == "OTA") { config.OTA = bool(data["value"]); storage_write(); ESPRestart(); }
+    if ( reqparam == "WEB") { config.WEB = bool(data["value"]); storage_write(); web_setup(); }
+    if ( reqparam == "DHCP") { config.DHCP = bool(data["value"]); storage_write(); wifi_connect(); }
     if ( reqparam == "STAMode") config.STAMode = bool(data["value"]);
+    if ( reqparam == "APMode") config.APMode = bool(data["value"]);
     if ( reqparam == "ssid") strcpy(config.ssid, (const char*)data["value"]);
     if ( reqparam == "WiFiKey") strcpy(config.WiFiKey, (const char*)data["value"]);
     if ( reqparam == "NTPServerName") strcpy(config.NTPServerName, (const char*)data["value"]);
@@ -103,7 +104,7 @@ void mqtt_setup() {
         }
         status_report();
         mqtt_publish(mqtt_pathtele(), "RSSI", String(getRSSI()));
-        mqtt_publish(mqtt_pathtele(), "IP", WiFi.localIP().toString());
+        if(!RTC_read()) mqtt_publish(mqtt_pathtele(), "IP", WiFi.localIP().toString());
     }
     mqtt_setcallback();
 }
@@ -114,7 +115,7 @@ void mqtt_loop() {
     if (!MQTTclient.loop()) {
         if ( millis() - MQTT_LastTime > (MQTT_Retry * 1000)) {
             MQTT_errors ++;
-            Serial.print( "in loop function MQTT ERROR! #: " + String(MQTT_errors) + "  ==> "); Serial.println( MQTTclient.state() );
+            Serial.println( "in loop function MQTT ERROR! #: " + String(MQTT_errors) + "  ==> " + MQTT_state_string(MQTTclient.state()) );
             MQTT_LastTime = millis();
             mqtt_connect();
         }

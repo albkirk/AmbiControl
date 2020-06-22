@@ -6,29 +6,30 @@ void ICACHE_RAM_ATTR C_pressed ();
 
 
 // **** Normal code definition here ...
-#define BUT_A 13              // TTGo TS v1.0 Button A INPUT pin
-#define BUT_B -1              // TTGo TS v1.0 Button B INPUT pin
-#define BUT_C -1              // TTGo TS v1.0 Button C INPUT pin
-#define interval 50           // time interval window to ignore bouncing
-bool A_STATUS = false;        // status of button A (true = pressed, false = released)
-bool B_STATUS = false;        // status of button B (true = pressed, false = released)
-bool C_STATUS = false;        // status of button C (true = pressed, false = released)
-int A_COUNT = 0;              // to count number of times button A is pressed within interval
-int B_COUNT = 0;              // to count number of times button B is pressed within interval
-int C_COUNT = 0;              // to count number of times button C is pressed within interval
-uint32_t last_A = 0;               // timer var to avoid function call trigger due contact bounce
-uint32_t last_B = 0;               // timer var to avoid function call trigger due contact bounce
-uint32_t last_C = 0;               // timer var to avoid function call trigger due contact bounce
+#define BUT_A 13                    // TTGo TS v1.0 Button A INPUT pin
+#define BUT_B -1                    // TTGo TS v1.0 Button B INPUT pin
+#define BUT_C -1                    // TTGo TS v1.0 Button C INPUT pin
+#define Butt_Bounce_Time 25         // time interval window to ignore bouncing
+#define Butt_Interval 500           // time interval window to ignore bouncing
+static bool A_STATUS = false;       // status of button A (true = pressed, false = released)
+static bool B_STATUS = false;       // status of button B (true = pressed, false = released)
+static bool C_STATUS = false;       // status of button C (true = pressed, false = released)
+static int A_COUNT = 0;             // to count number of times button A is pressed within interval
+static int B_COUNT = 0;             // to count number of times button B is pressed within interval
+static int C_COUNT = 0;             // to count number of times button C is pressed within interval
+static uint32_t last_A = 0;         // timer var to avoid function call trigger due contact bounce
+static uint32_t last_B = 0;         // timer var to avoid function call trigger due contact bounce
+static uint32_t last_C = 0;         // timer var to avoid function call trigger due contact bounce
 
 // BUTTON related functions
 void A_pressed () {
   detachInterrupt(BUT_A);                            // to avoid this function call be retriggered (or watch dog bites!!)
   int NOW = millis();
-  if (NOW - last_A > interval / 2) {                 // respect minimum time between 2 consecutive function calls
-      while (millis() - NOW < interval / 2) {};      // loop to allow button status be stable before reading it
+  if (NOW - last_A > Butt_Bounce_Time) {                 // respect minimum time between 2 consecutive function calls
+      while (millis() - NOW < Butt_Bounce_Time) {};      // loop to allow button status be stable before reading it
       if (digitalRead(BUT_A) == LOW) {
           A_STATUS = true;
-          if (NOW - last_A < 6 * interval) {
+          if (NOW - last_A < Butt_Interval) {
               A_COUNT += 1;
               Serial.println("Button A pressed " + String(A_COUNT) + "times!");
           }
@@ -49,11 +50,11 @@ void A_pressed () {
 void B_pressed () {
   detachInterrupt(BUT_B);                            // to avoid this function call be retriggered (or watch dog bites!!)
   int NOW = millis();
-  if (NOW - last_B > interval / 2) {                 // respect minimum time between 2 consecutive function calls
-      while (millis() - NOW < interval / 2) {};      // loop to allow button status be stable before reading it
+  if (NOW - last_B > Butt_Bounce_Time) {                 // respect minimum time between 2 consecutive function calls
+      while (millis() - NOW < Butt_Bounce_Time) {};      // loop to allow button status be stable before reading it
       if (digitalRead(BUT_B) == LOW) {
           B_STATUS = true;
-          if (NOW - last_B < 6 * interval) {
+          if (NOW - last_B < Butt_Interval) {
               B_COUNT += 1;
               Serial.println("Button B pressed " + String(B_COUNT) + "times!");
           }
@@ -74,11 +75,11 @@ void B_pressed () {
 void C_pressed () {
   detachInterrupt(BUT_C);                            // to avoid this function call be retriggered (or watch dog bites!!)
   int NOW = millis();
-  if (NOW - last_C > interval / 2) {                 // respect minimum time between 2 consecutive function calls
-      while (millis() - NOW < interval / 2) {};      // loop to allow button status be stable before reading it
+  if (NOW - last_C > Butt_Bounce_Time) {                 // respect minimum time between 2 consecutive function calls
+      while (millis() - NOW < Butt_Bounce_Time) {};      // loop to allow button status be stable before reading it
       if (digitalRead(BUT_C) == LOW) {
           C_STATUS = true;
-          if (NOW - last_C < 6 * interval) {
+          if (NOW - last_C < Butt_Interval) {
               C_COUNT += 1;
               Serial.println("Button C pressed " + String(C_COUNT) + "times!");
           }

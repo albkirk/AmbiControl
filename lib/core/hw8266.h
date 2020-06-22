@@ -196,7 +196,7 @@ void flash_LED(unsigned int n_flash = 1, int fl_LED = LED_esp, bool LED_OFF = !c
             digitalWrite(fl_LED, !LED_OFF);             // Turn LED on
             delay(LED_millis/3);
             digitalWrite(fl_LED, LED_OFF);              // Turn LED off
-            delay(LED_millis/3);
+            delay(LED_millis);
         }
     }
 }
@@ -217,7 +217,7 @@ void hw_setup() {
   // Output GPIOs
       if (LED_esp>=0) {
           pinMode(LED_esp, OUTPUT);
-          digitalWrite(LED_esp, boolean(!config.LED));  // initialize LED off
+          digitalWrite(LED_esp, HIGH);                  // initialize LED off
       }
       if (BUZZER>=0) {
           pinMode(BUZZER, OUTPUT);
@@ -227,7 +227,7 @@ void hw_setup() {
   // Input GPIOs
 
 
-      //RTC_read();                                       // Read the RTC memmory
+      //RTC_read();                                      // Read the RTC memmory
 }
 
 void hw_loop() {

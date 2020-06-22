@@ -13,8 +13,8 @@
 
 // HARWARE & SOFTWARE Version
 #define BRANDName "AlBros_Team"                         // Hardware brand name
-#define MODELName "GenBox_A"                            // Hardware model name
-#define SWVer "10.13"                                   // Major.Minor Software version (use String 01.00 - 99.99 format !)
+#define MODELName "AmbiSense_v2"                        // Hardware model name
+#define SWVer "02.17"                                   // Major.Minor Software version (use String 01.00 - 99.99 format !)
 
 // Power Source & Battery Level
 bool BattPowered = true;                                // Is the device battery powered?
@@ -23,10 +23,10 @@ bool BattPowered = true;                                // Is the device battery
 // GPIO to Function Assignment
 #define Using_ADC false                                 // will this device use the ADC? (if not it will measure the internal voltage)
 #define LED_esp 2                                       // ESP Led is connected to GPIO 2. -1 means NOT used!
-#define DHTTYPE 2                                       // use 1 for "DHT11", 2 for "DHT22", or 3 for "AM2320" to select the DHT Model
+#define DHTTYPE 3                                       // use 1 for "DHT11", 2 for "DHT22", or 3 for "AM2320" to select the DHT Model
 #define DHTPIN -1                                       // GPIO connected to DHT Data PIN. -1 means NO DHT used!
-#define SDAPIN -1                                       // GPIO connected to (AM) I2C SDA PIN. -1 means NO SDA used!
-#define SCKPIN -1                                       // GPIO connected to (AM) I2C SCK PIN. -1 means NO SCK used!
+#define SDAPIN 12                                       // GPIO connected to (AM) I2C SDA PIN. -1 means NO SDA used!
+#define SCKPIN 14                                       // GPIO connected to (AM) I2C SCK PIN. -1 means NO SCK used!
 #define BUZZER -1                                       // (Active) Buzzer pin. Suggest to use pin 0.  -1 means NOT used!
 
 
@@ -43,6 +43,7 @@ struct __attribute__((__packed__)) strConfig {
   bool WEB;
   bool Remote_Allow;
   bool STAMode;
+  bool APMode;
   char ssid[32];
   char WiFiKey[32];
   bool DHCP;
@@ -55,12 +56,15 @@ struct __attribute__((__packed__)) strConfig {
   bool isDayLightSaving;
   char MQTT_Server[128];
   long MQTT_Port;
+  bool MQTT_Secure;
   char MQTT_User[16];
-  char MQTT_Password[16];
+  char MQTT_Password[32];
   char UPDATE_Server[128];
   long UPDATE_Port;
   char UPDATE_User[16];
-  char UPDATE_Password[16];
+  char UPDATE_Password[32];
+  char WEB_User[16];
+  char WEB_Password[32];
   bool SWITCH_Default;
   float Temp_Corr;
   float LDO_Corr;
@@ -73,48 +77,54 @@ void config_defaults() {
     strcpy(config.DeviceName, "ESP_Generic");             // Device Name
     strcpy(config.Location, "MainRoom");                  // Device Location
     strcpy(config.ClientID, "001001");                    // Client ID (used on MQTT)
-    config.ONTime = 60;                                   // 0-255 seconds (Byte range)
-    config.SLEEPTime = 0;                                 // 0-255 minutes (Byte range)
-    config.DEEPSLEEP = false;                             // 0 - Disabled, 1 - Enabled
+    config.ONTime = 1;                                    // 0-255 seconds (Byte range)
+    config.SLEEPTime = 15;                                // 0-255 minutes (Byte range)
+    config.DEEPSLEEP = true;                              // 0 - Disabled, 1 - Enabled
     config.LED = true;                                    // 0 - OFF, 1 - ON
     config.TELNET = false;                                // 0 - Disabled, 1 - Enabled
-    config.OTA = true;                                    // 0 - Disabled, 1 - Enabled
-    config.WEB = false;                                   // 0 - Disabled, 1 - Enabled
+    config.OTA = false;                                   // 0 - Disabled, 1 - Enabled
+    config.WEB = true;                                    // 0 - Disabled, 1 - Enabled
     config.Remote_Allow = true;                           // 0 - Not Allow, 1 - Allow remote operation
-    config.STAMode = true;                                // 0 - AP or AP+STA Mode, 1 - Station only Mode
+    config.STAMode = true;                                // 0 - Station Mode Disabled, 1 - Station Mode Enabled
+    config.APMode = true;                                 // 0 - AP Mode Disabled, 1 - AP Mode Enabled
     strcpy(config.ssid, "WiFiCasaN");                     // Wireless LAN SSID (STA mode)
     strcpy(config.WiFiKey, "12345678");                   // Wireless LAN Key (STA mode)
     config.DHCP = true;                                   // 0 - Static IP, 1 - DHCP
     config.IP[0] = 192; config.IP[1] = 168; config.IP[2] = 1; config.IP[3] = 10;
     config.Netmask[0] = 255; config.Netmask[1] = 255; config.Netmask[2] = 255; config.Netmask[3] = 0;
     config.Gateway[0] = 192; config.Gateway[1] = 168; config.Gateway[2] = 1; config.Gateway[3] = 254;
-    strcpy(config.NTPServerName, "pt.pool.ntp.org");         // NTP Server
+    strcpy(config.NTPServerName, "pt.pool.ntp.org");      // NTP Server
     config.Update_Time_Via_NTP_Every = 1200;              // Time in minutes to re-sync the clock
     config.TimeZone = 0;                                  // -12 to 13. See Page_NTPSettings.h why using -120 to 130 on the code.
     config.isDayLightSaving = 1;                          // 0 - Disabled, 1 - Enabled
     strcpy(config.MQTT_Server, "iothubna.hopto.org");     // MQTT Broker Server (URL or IP)
     config.MQTT_Port = 1883;                              // MQTT Broker TCP port
-    strcpy(config.MQTT_User, "admin");                    // MQTT Broker username
-    strcpy(config.MQTT_Password, "admin");                // MQTT Broker password
+    config.MQTT_Secure = false;                           // 0 - Unsecure, 1 - TLS v1.2 Secured!!
+    strcpy(config.MQTT_User, "mqttcasa");                 // MQTT Broker username
+    strcpy(config.MQTT_Password, "mqttcasa!");            // MQTT Broker password
     strcpy(config.UPDATE_Server, "iothubna.hopto.org");   // UPDATE Server (URL or IP)
     config.UPDATE_Port = 1880;                            // UPDATE Server TCP port
     strcpy(config.UPDATE_User, "user");                   // UPDATE Server username
     strcpy(config.UPDATE_Password, "1q2w3e4r");           // UPDATE Server password
+    strcpy(config.WEB_User, "admin");                     // WEB Server username
+    strcpy(config.WEB_Password, "admin");                 // WEB Server password
     config.SWITCH_Default = false;                        // 0 - OFF, 1 - ON - Default SWITCH Status 
     config.Temp_Corr = 0.0;                               // Sensor Temperature Correction Factor, typically due to electronic self heat.
     config.LDO_Corr = 0.6;                                // Battery Voltage [volt] corrective Factor due to LDO/Diode voltage drop
 }
 
-
 // Libraries to INCLUDE
+#include <secure_credentials.h>
 #include <storage.h>
 #include <hw8266.h>
 #include <mywifi.h>
+#include <sniffer.h>
 #include <telnet.h>
 #include <mqtt.h>
 #include <ntp.h>
 #include <ota.h>
-//#include <web.h>
+#include <ambient.h>
+#include <web.h>
 #include <global.h>
 #include <project.h>
 #include <mqttactions.h>                    // Added later because functions from project are called here.
@@ -125,7 +135,7 @@ void setup() {
     WiFi.mode(WIFI_SHUTDOWN);
 
   // Start Serial interface
-      Serial.begin(74880);                  //This odd baud speed will show ESP8266 boot diagnostics too.
+      Serial.begin(74880);               // For debuging use 74880
       //Serial.begin(115200);               // For faster communication use 115200
 
       Serial.println(" ");
@@ -145,21 +155,22 @@ void setup() {
   // Start WiFi service (Station or/and as Access Point)
       wifi_setup();
 
+
   // Start TELNET service
       if (config.TELNET) telnet_setup();
 
- // Start MQTT service
-      mqtt_setup();
-
   // Start NTP service
       ntp_setup();
+
+ // Start MQTT service
+      mqtt_setup();
 
   // Start OTA service
       if (config.OTA) ota_setup();
       ota_http_upg();
 
   // Start ESP Web Service
-      //if (config.WEB) web_setup();
+      if (config.WEB) web_setup();
 
 
   // **** Project SETUP Sketch code here...
@@ -195,14 +206,14 @@ void loop() {
       if (config.OTA) ota_loop();
 
   // ESP Web Server requests handling
-      //if (config.WEB) web_loop();
-
-  // Global loops handling
-      deepsleep_loop();
-      if (BattPowered && ((millis() - 2500) % 60000 < 15)) Batt_OK_check();    // If Batt LOW, it will DeepSleep forever!
+      if (config.WEB) web_loop();
 
   // **** Project LOOP Sketch code here ...
       project_loop();
+
+  // Global loops handling
+      if (!A_STATUS) deepsleep_loop();
+      if (BattPowered && ((millis() - 2500) % 60000 < 15)) Batt_OK_check();    // If Batt LOW, it will DeepSleep forever!
 
 
 }  // end of loop()

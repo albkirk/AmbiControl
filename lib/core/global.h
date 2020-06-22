@@ -1,5 +1,5 @@
 void deepsleep_loop() {
-    if (config.DEEPSLEEP && !config.TELNET && !config.OTA && !config.WEB && (millis()/1000) > (ulong(config.ONTime) + ONTime_Offset + Extend_time)) {
+    if (config.DEEPSLEEP && (millis()/1000) > (ulong(config.ONTime) + ONTime_Offset + Extend_time)) {
         mqtt_publish(mqtt_pathtele(), "Status", "DeepSleep");
         mqtt_unsubscribe(mqtt_pathconf(), "+");
         mqtt_disconnect();
