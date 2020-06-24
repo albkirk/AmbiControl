@@ -89,7 +89,23 @@ void mqtt_publish(String pubpath, String pubtopic, String pubvalue, boolean tore
             telnet_println("");
         }
     }
+    else    if (pubtopic == "Telemetry") {
+                storage_save_data( pubvalue.c_str(), strlen(pubvalue.c_str()) );
+            }
 }
+
+
+void mqtt_dump_data() {
+    static String dumpvalue;                                       // mem space to handle msg payload
+    int data_address = storage_get_data(&dumpvalue);
+    while (data_address !=0)
+    {
+        storage_clean_data(data_address);                           // This needs to be optimize.
+        mqtt_publish(mqtt_pathtele(), "Telemetry", dumpvalue);      // everytime it fails to publish
+        data_address = storage_get_data(&dumpvalue);                // it will re-write the same content and burn the eprom!!!
+    }
+}
+
 
 
 void mqtt_subscribe(String subpath, String subtopic) {
@@ -124,6 +140,7 @@ void mqtt_connect() {
             telnet_println( "[DONE]" );
             //mqtt_subscribe(mqtt_pathconf(), "+");
             mqtt_subscribe(mqtt_pathconf(), "configure");
+            mqtt_dump_data();
         }
         else {
             MQTT_state = MQTTclient.state();

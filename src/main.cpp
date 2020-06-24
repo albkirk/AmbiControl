@@ -14,7 +14,7 @@
 // HARWARE & SOFTWARE Version
 #define BRANDName "AlBros_Team"                         // Hardware brand name
 #define MODELName "AmbiSense_v2"                        // Hardware model name
-#define SWVer "02.17"                                   // Major.Minor Software version (use String 01.00 - 99.99 format !)
+#define SWVer "02.19"                                   // Major.Minor Software version (use String 01.00 - 99.99 format !)
 
 // Power Source & Battery Level
 bool BattPowered = true;                                // Is the device battery powered?

@@ -26,6 +26,12 @@ Note: Push the button after once to wake up, wait to see the Led flash twice and
 ## --Software--
 Being based on my [GitHub albkirk ESP8266_KickStart](https://github.com/albkirk/ESP8266_KickStart), there's not much to add...
 
+## --Dependencies--
+You must install the following libraries (under arduino or Platformio):
+
+ 1. **ArduinoJson** by Benoit Blanchon 
+ 2. **PubSubClient** by Nick O'Leary 
+
 
 ## --Enclosure--
 The suggested enclosure is shared in my Onshape CAD account: 
@@ -33,5 +39,12 @@ https://cad.onshape.com/documents/5abf8838a49b110243c2c383/w/94c9c8607583554f2e7
 
 
 ## Future features!!
-	1. Buffer Telemetry until connection is available 
+	1. Buffer Telemetry until connection is available -- Done using EEPROM. Still Need to change to SPIFFS
 	2. Add GPS to include geographical position
+
+
+## **WARNING**
+DO NOT USE THIS FILE IN PRODUCTION.
+
+Version 2.19 stress to much the ESP EEPROM by reading/writing telemetry data. The worst scenario is with unstable comunication
+(ex.: poor WiFi coverage).

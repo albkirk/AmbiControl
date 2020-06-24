@@ -4,8 +4,8 @@
  https://github.com/esp8266/Arduino/issues/1539
 */
 #include <EEPROM.h>
-#define EEPROMZize 2048
-
+#define EEPROMZize 4096                      // 256KB
+#define Mem_Start_Pos 1024                   // Memory starting point Position for the space to write/read data
 
 //
 //  AUXILIAR functions to handle EEPROM
@@ -34,29 +34,26 @@ long EEPROMReadlong(long address) {
   return ((four << 0) & 0xFF) + ((three << 8) & 0xFFFF) + ((two << 16) & 0xFFFFFF) + ((one << 24) & 0xFFFFFFFF);
 }
 
-void loadStruct(void *data_dest, size_t size)
-{
-    for(size_t i = 0; i < size; i++)
-    {
-        char data = EEPROM.read(i + 15);
+void loadStruct(void *data_dest, size_t size, int start_address) {
+    for(size_t i = 0; i < size; i++) {
+        char data = EEPROM.read(i + start_address);
         ((char *)data_dest)[i] = data;
     }
 }
 
-void storeStruct(void *data_source, size_t size)
-{
-  for(size_t i = 0; i < size; i++)
-  {
-    char data = ((char *)data_source)[i];
-    EEPROM.write(i + 15, data);
-  }
-  EEPROM.commit();
+void storeStruct(void *data_source, size_t size, int start_address) {
+    for(size_t i = 0; i < size; i++) {
+        char data = ((char *)data_source)[i];
+        EEPROM.write(i + start_address, data);
+    }
+    EEPROM.commit();
 }
 
 
 void storage_print() {
 
-  Serial.println("Printing Config");
+  Serial.printf("Printing Config [%d bytes]\n", sizeof(config));
+  if (sizeof(config) + 16 > Mem_Start_Pos) Serial.println ("WARNING: Memory zones overlapinng!!");
   Serial.printf("Device Name: %s and Location: %s\n", config.DeviceName, config.Location);
   Serial.printf("ON time[sec]: %d  -  SLEEP Time[min]: %d -  DEEPSLEEP enabled: %d\n", config.ONTime, config.SLEEPTime, config.DEEPSLEEP);
   Serial.printf("LED enabled: %d   -  TELNET enabled: %d  -  OTA enabled: %d  -  WEB enabled: %d\n", config.LED, config.TELNET, config.OTA, config.WEB);
@@ -86,7 +83,7 @@ boolean storage_read() {
   Serial.println("Reading Configuration");
     if (EEPROM.read(0) == 'C' && EEPROM.read(1) == 'F'  && EEPROM.read(2) == 'G' && EEPROMReadlong(3) > 2 && EEPROMReadlong(3) == sizeof(config)) {
         Serial.println("Configurarion Found!");
-        loadStruct(&config, EEPROMReadlong(3));
+        loadStruct(&config, EEPROMReadlong(3), 15);     // I just decided that it will read/write after address 15
       return true;
     }
     else {
@@ -106,9 +103,67 @@ void storage_write() {
   EEPROMWritelong(3, sizeof(config));
   //Serial.println("Value of 3 WRITE: " + String(sizeof(config)));
 
-  storeStruct(&config, sizeof(config));
+  storeStruct(&config, sizeof(config), 15);             // I just decided that it will read/write after address 15
   //Serial.println("Value of 0,1,2 READ: " + String(EEPROM.read(0)) + String(EEPROM.read(1)) + String(EEPROM.read(2)));
   //Serial.println("Value of 3 READ: " + String(EEPROMReadlong(3)));
+}
+
+
+bool storage_save_data(const char *data_source, uint8_t size, int start_address = Mem_Start_Pos) {
+    int pointer = start_address -1;
+    uint8_t data_lenght = 0;
+    char data;
+    do
+    {
+      pointer = pointer + data_lenght + 1;              // +1 is needed to add mem slot (uint8) that indicates the lenght of data
+      data_lenght = EEPROM.read(pointer);
+    } while (data_lenght > 0 && pointer < EEPROMZize);
+    
+    if ( (size + pointer) >= EEPROMZize ) {           // It means it don't have space to write the data.
+        Serial.println("NOT enough space in storage to save data ! ! !");
+        return false;
+    }
+
+    EEPROM.write(pointer, size);                        // writing the size of data at position "0"   
+    //Serial.printf("Wrote Length : %d\n", EEPROM.read(pointer));
+    for(uint8_t i = 0; i < size; i++) {
+          data = data_source[i];
+          Serial.print(data);
+          EEPROM.write(i + pointer + 1, data);          // offseting 1 because the position "0" stores the data lenght
+    }
+    Serial.printf("SAVE_DATA --> pointer: %d \t data Lenght: %d\n", pointer, size);
+    EEPROM.write(pointer + size + 1, 0);                // writing 0 to indicate that MEM is free after this address
+    EEPROM.commit();
+    return true;                                        // true means all went OK
+}
+
+
+int storage_get_data(String *data_dest, int start_address = Mem_Start_Pos) {
+    int pointer = start_address -1;                     // address position where is indicated the lenght of data
+    uint8_t data_lenght = 0;                            // start on -1 because I'm adding +1 on every interaction
+    do
+    {
+        pointer = pointer + data_lenght + 1;            // +1 is needed to add mem slot (uint8) that indicates the lenght of data
+        data_lenght = EEPROM.read(pointer);
+    } while (data_lenght > 0 && EEPROM.read(pointer + data_lenght + 1) > 0);
+
+    Serial.printf("GET_DATA --> pointer: %d \t data Lenght: %d\n", pointer, data_lenght);
+    if (pointer == start_address && data_lenght == 0 ) return 0;              // it means that there is no data stored
+
+    char data_buff[data_lenght];
+    for(size_t i = 0; i < data_lenght; i++) {
+        data_buff[i] = EEPROM.read(i + pointer + 1);
+    }
+    data_buff[data_lenght] = 0;
+    *data_dest = String(data_buff);
+    Serial.println(*data_dest);
+    return pointer; 
+}
+
+
+void storage_clean_data(int address) {
+  if (address != 0) EEPROM.write(address, 0);
+  EEPROM.commit();
 }
 
 

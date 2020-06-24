@@ -43,11 +43,16 @@ void on_message(const char* topic, byte* payload, unsigned int msg_length) {
     if ( reqparam == "OTA") { config.OTA = bool(data["value"]); storage_write(); ESPRestart(); }
     if ( reqparam == "WEB") { config.WEB = bool(data["value"]); storage_write(); web_setup(); }
     if ( reqparam == "DHCP") { config.DHCP = bool(data["value"]); storage_write(); wifi_connect(); }
-    if ( reqparam == "STAMode") config.STAMode = bool(data["value"]);
-    if ( reqparam == "APMode") config.APMode = bool(data["value"]);
+    if ( reqparam == "STAMode") { config.STAMode = bool(data["value"]); storage_write(); }
+    if ( reqparam == "APMode") { config.APMode = bool(data["value"]); storage_write(); }
     if ( reqparam == "ssid") strcpy(config.ssid, (const char*)data["value"]);
     if ( reqparam == "WiFiKey") strcpy(config.WiFiKey, (const char*)data["value"]);
     if ( reqparam == "NTPServerName") strcpy(config.NTPServerName, (const char*)data["value"]);
+    if ( reqparam == "MQTT_Server") { strcpy(config.MQTT_Server, (const char*)data["value"]); storage_write(); }
+    if ( reqparam == "MQTT_Port") { config.MQTT_Port = data["value"];storage_write(); }
+    if ( reqparam == "MQTT_Secure") { config.MQTT_Secure = bool(data["value"]); storage_write(); }
+    if ( reqparam == "MQTT_User") { strcpy(config.MQTT_User, (const char*)data["value"]); storage_write(); }
+    if ( reqparam == "MQTT_Password") { strcpy(config.MQTT_Password, (const char*)data["value"]); storage_write(); }   
     if ( reqparam == "Update_Time_Via_NTP_Every") config.Update_Time_Via_NTP_Every = data["value"];
     if ( reqparam == "TimeZone") config.TimeZone = data["value"];
     if ( reqparam == "isDayLightSaving") config.isDayLightSaving = bool(data["value"]);

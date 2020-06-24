@@ -211,7 +211,7 @@ void ambient_send_json () {
 
     serializeJson(ambient_doc, ambient_jsonString);             //Serialize JSON data to string
     // Serial.print("jsonString ready to Publish: "); Serial.println((jsonString));
-    telnet_println("Telemetry: " + String(ambient_jsonString) + " % \t");
+    telnet_println("Telemetry: " + String(ambient_jsonString));
     mqtt_publish(mqtt_pathtele(), "Telemetry", String(ambient_jsonString));
 }
 

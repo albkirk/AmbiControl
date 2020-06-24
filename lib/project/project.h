@@ -35,14 +35,13 @@ void project_setup() {
 
 void project_loop() {
   // Ambient handing
-      if (TIMER >0) if ((millis() - 3500) % (TIMER * 60000) < 5) ambient_data();      // TIMER bigger than zero on div or dog bites!!
+      if (config.SLEEPTime >0) if ((millis() - 3500) % (config.SLEEPTime * 60000) < 5) ambient_data();      // TIMER bigger than zero on div or dog bites!!
 
 
         if (A_COUNT == 1 && (millis() - last_A > 5000)) {
           mqtt_publish(mqtt_pathtele(), "Button", "Holded");
           flash_LED(20);
           mqtt_publish(mqtt_pathtele(), "Status", "Reseting");
-          mqtt_unsubscribe(mqtt_pathconf(), "+");
           mqtt_disconnect();
           storage_reset();
           ESPRestart();
@@ -55,7 +54,6 @@ void project_loop() {
             flash_LED(A_COUNT);
             if (A_COUNT == 3) {
                 mqtt_publish(mqtt_pathtele(), "Status", "Rebooting");
-                mqtt_unsubscribe(mqtt_pathconf(), "+");
                 mqtt_disconnect();
                 ESPRestart();
             }
@@ -77,7 +75,6 @@ void project_loop() {
             if (A_COUNT == 9) config.Remote_Allow = !config.Remote_Allow;
             if (A_COUNT == 10) {
                 mqtt_publish(mqtt_pathtele(), "Status", "Shutdown");
-                mqtt_unsubscribe(mqtt_pathconf(), "+");
                 mqtt_disconnect();
                 telnet_println("Going to sleep forever.");
                 GoingToSleep(0, curUnixTime());
