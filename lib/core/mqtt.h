@@ -1,5 +1,5 @@
 // MQTT Constants
-#define MQTT_new_MAX_PACKET_SIZE 512                // Default: 256 bytes
+#define MQTT_new_MAX_PACKET_SIZE 256                // Default: 256 bytes
 #define MQTT_new_KEEPALIVE 60                       // Default: 15 seconds
 #define MQTT_new_SOCKET_TIMEOUT 15                  // Default: 15 seconds
 #include <PubSubClient.h>
@@ -52,19 +52,6 @@ String  MQTT_state_string(int mqttstate = MQTT_state){
    return MQTT_state_Name[map(mqttstate, -4, 5, 0 , 9)];
 }
 
-void getTime() {
-    time_t now;
-    struct tm timeinfo;
-    configTime(-1 * 3600, 0, "pool.ntp.org", "time.nist.gov", "time.windows.com");
-    do {
-        now = time(nullptr);
-        delay(100);
-    } while (now < 8 * 3600 * 2 && millis() < 15000);
-    gmtime_r(&now, &timeinfo);
-    Serial.print("TIME Current time: ");
-    Serial.print(asctime(&timeinfo));
-
-}
 
 String mqtt_pathtele() {
   return ChipID + "/";
@@ -80,7 +67,7 @@ void mqtt_publish(String pubpath, String pubtopic, String pubvalue, boolean tore
     String topic = "";
     topic += pubpath; topic += pubtopic;
     // Send payload
-    if (MQTT_state == MQTT_CONNECTED) {
+    if (MQTTclient.state() == MQTT_CONNECTED) {
         if (MQTTclient.publish(topic.c_str(), pubvalue.c_str(), toretain) == 1) telnet_println("MQTT published:  " + String(topic.c_str()) + " = " + String(pubvalue.c_str()));
         else {
             //flash_LED(2);
@@ -88,22 +75,24 @@ void mqtt_publish(String pubpath, String pubtopic, String pubvalue, boolean tore
             telnet_println("!!!!! MQTT message NOT published. !!!!!");
             telnet_println("");
         }
+        yield();                                // Required, or else it won't publish messages in burst
     }
-    else    if (pubtopic == "Telemetry") {
-                storage_save_data( pubvalue.c_str(), strlen(pubvalue.c_str()) );
-            }
+    else {
+        MQTT_state = MQTTclient.state();
+        if (pubtopic == "Telemetry") {
+                flash_save_data(&pubvalue);
+        }
+    }
 }
 
 
 void mqtt_dump_data() {
     static String dumpvalue;                                       // mem space to handle msg payload
-    int data_address = storage_get_data(&dumpvalue);
-    while (data_address !=0)
-    {
-        storage_clean_data(data_address);                           // This needs to be optimize.
-        mqtt_publish(mqtt_pathtele(), "Telemetry", dumpvalue);      // everytime it fails to publish
-        data_address = storage_get_data(&dumpvalue);                // it will re-write the same content and burn the eprom!!!
-    }
+    bool first_time = true;
+    while (flash_get_data(&dumpvalue, first_time)) {
+        mqtt_publish(mqtt_pathtele(), "Telemetry", dumpvalue);
+        first_time = false;
+    } 
 }
 
 
@@ -126,8 +115,8 @@ void mqtt_unsubscribe(String subpath, String subtopic) {
 
 void mqtt_connect() {
     if (WIFI_state != WL_CONNECTED) telnet_println( "MQTT ERROR! ==> WiFi NOT Connected!" );
+    else if (config.MQTT_Secure && !NTP_Sync) telnet_println( "MQTT ERROR! ==> NTP Required but NOT Sync!" );
     else {
-        getTime();
         telnet_print("Connecting to MQTT Broker ... ");
         MQTTclient.setBufferSize(MQTT_new_MAX_PACKET_SIZE);
         MQTTclient.setKeepAlive(MQTT_new_KEEPALIVE);

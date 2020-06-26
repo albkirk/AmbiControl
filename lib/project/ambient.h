@@ -25,9 +25,6 @@ float Lux = 0.0;                            // Variable
 float Tempe_MAX = -100.0;                   // Variable
 float Tempe_MIN = 100.0;                    // Variable
 
-//JSON Variables
-char ambient_jsonString[256];
-DynamicJsonDocument ambient_doc(256);
 
 void I2C_scan() {
     byte error, address;
@@ -196,25 +193,6 @@ void ambient_send_data() {
     telnet_println("");
 }
 
-void ambient_send_json () {
-    String temp_Timestamp, temp_BatLevel;
-    char fbat[3];        // long enough to hold complete floating string
-
-    // Purge old JSON data and Load new values
-    ambient_doc.clear();
-    ambient_doc["Timestamp"] = curUnixTime();
-    ambient_doc["BatLevel"] = String(dtostrf(getVoltage(),3,0,fbat)).toFloat();
-    ambient_doc["RSSI"] = getRSSI();
-    ambient_doc["Temperature"] = Temperature;
-    ambient_doc["Humidity"] = Humidity;
-
-
-    serializeJson(ambient_doc, ambient_jsonString);             //Serialize JSON data to string
-    // Serial.print("jsonString ready to Publish: "); Serial.println((jsonString));
-    telnet_println("Telemetry: " + String(ambient_jsonString));
-    mqtt_publish(mqtt_pathtele(), "Telemetry", String(ambient_jsonString));
-}
-
 void ambient_setup() {
     if (DHTPIN>=0 || SDAPIN>=0) {
         // Start Ambient Sensor
@@ -229,7 +207,6 @@ void ambient_setup() {
 void ambient_data() {
     if (DHTPIN>=0 || SDAPIN>=0) {
         ambient_get_data();
-        ambient_send_json();
-        //ambient_send_data();
+        ambient_send_data();
     }
 }

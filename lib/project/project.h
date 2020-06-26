@@ -1,22 +1,61 @@
 // **** Project code definition here ...
 #include <buttons.h>
+//#include <ambient.h>
+//#include <mygps.h>
 
 #define FET_Control_Pin 0
 
+//JSON Variables
+char telemetry_jsonString[256];
+DynamicJsonDocument telemetry_doc(256);
+
+
 // **** Project code functions here ...
+void print_gps_data () {
+        if (GPS_Valid) {
+            telnet_print("Sats: " + String(GPS_Sat) + "\t");
+            telnet_print("Lat: " + String(GPS_Lat, 4) + "\t");
+            telnet_print("Lng: " + String(GPS_Lng, 4) + "\t");
+            telnet_print("Alt: " + String(GPS_Alt, 1) + "\t");
+            telnet_print("Course: " + String(GPS_Course, 1) + "\t");
+            telnet_print("Speed: " + String(GPS_Speed, 1) + "\t");
+            telnet_println("");
+        }
+        else telnet_println("GPS Not FIX");
+}
+
+
+void send_Telemetry() {
+    char fbat[3];        // long enough to hold complete floating string
+    ambient_get_data();
+    // Purge old JSON data and Load new values
+    telemetry_doc.clear();
+    telemetry_doc["Timestamp"] = curUnixTime();
+    telemetry_doc["BatLevel"] = String(dtostrf(getVoltage(),3,0,fbat)).toFloat();
+    telemetry_doc["RSSI"] = getRSSI();
+    telemetry_doc["Temperature"] = Temperature;
+    telemetry_doc["Humidity"] = Humidity;
+    if (config.GPS_HW){
+        gps_update();
+        if (GPS_Valid){
+            telemetry_doc["Lat"] = String(GPS_Lat, 4).toFloat();
+            telemetry_doc["Lng"] = String(GPS_Lng, 4).toFloat();
+        }
+    }
+
+    serializeJson(telemetry_doc, telemetry_jsonString);             //Serialize JSON data to string
+    //telnet_println("Telemetry: " + String(telemetry_jsonString));
+    mqtt_publish(mqtt_pathtele(), "Telemetry", String(telemetry_jsonString));
+}
+
+
 void project_hw() {
  // Output GPIOs
     pinMode(FET_Control_Pin, OUTPUT);
-    digitalWrite(FET_Control_Pin, false);    // if something goes wrong during setup, it allows to use the button as "RST button"
+    //digitalWrite(FET_Control_Pin, true);    // if something goes wrong during setup, it allows to use the button as "RST button"
+    digitalWrite(FET_Control_Pin, false);   // Set button to Normal "Action" operation
     buttons_setup();
     flash_LED(2);
-    //pinMode(BUT_A, INPUT_PULLUP);
-    //delay(300);
-    //if (digitalRead(BUT_A) == false) {
-    //  delay(5000);
-    //  if (digitalRead(BUT_A) == false) {storage_reset(); ESPRestart();}
-    //}
-
 
  // Input GPIOs
 
@@ -25,17 +64,23 @@ void project_hw() {
 
 void project_setup() {
       //digitalWrite(FET_Control_Pin, false);   // Normal button operation
-      //flash_LED(3);
       //buttons_setup();
+      //flash_LED(2);
   // Start Ambient devices
       ambient_setup();
-      TIMER = 0;                             // TIMER value (Recommended 15 minutes) to get Ambient data.
-      ambient_data();
+      //TIMER = 0;                             // TIMER value (Recommended 15 minutes) to get Ambient data.
+      //ambient_data();
+      gps_setup();
+      send_Telemetry();
 }
 
 void project_loop() {
   // Ambient handing
-      if (config.SLEEPTime >0) if ((millis() - 3500) % (config.SLEEPTime * 60000) < 5) ambient_data();      // TIMER bigger than zero on div or dog bites!!
+    if (config.SLEEPTime >0) if ((millis() + 3500) % (config.SLEEPTime * 60000) < 5) send_Telemetry();  // TIMER bigger than zero on div or dog bites!!
+//    if (config.GPS_HW) if ((millis() - 400) % (GPS_Update * 1000) < 5) {                                //  Update GPS data
+//        gps_update();
+//        print_gps_data();
+//    }
 
 
         if (A_COUNT == 1 && (millis() - last_A > 5000)) {
@@ -44,6 +89,7 @@ void project_loop() {
           mqtt_publish(mqtt_pathtele(), "Status", "Reseting");
           mqtt_disconnect();
           storage_reset();
+          RTC_reset();
           ESPRestart();
           A_COUNT = 0;
         }
@@ -63,6 +109,7 @@ void project_loop() {
                 config.WEB = false;
                 config.APMode = false;
                 config.LED = false;
+                web_setup();                // needed to clean the ON extender time. 
                 storage_write();
             }        
             if (A_COUNT == 6) {          

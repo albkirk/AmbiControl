@@ -123,7 +123,7 @@ void web_setup() {
 	  MyWebServer.on ( "/microajax.js", []() { MyWebServer.send ( 200, "text/plain", PAGE_microajax_js );  } );
 	  MyWebServer.onNotFound ( []() { MyWebServer.send ( 400, "text/html", "Page not Found" );   }  );
     MyWebServer.begin();
-    Extend_time = 900000;
+    Extend_time = 900;
     Serial.println( "My Web server has started for 15 minutes" );
   }
   else {

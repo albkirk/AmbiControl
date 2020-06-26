@@ -14,7 +14,7 @@
 // HARWARE & SOFTWARE Version
 #define BRANDName "AlBros_Team"                         // Hardware brand name
 #define MODELName "AmbiSense_v2"                        // Hardware model name
-#define SWVer "02.19"                                   // Major.Minor Software version (use String 01.00 - 99.99 format !)
+#define SWVer "03.06"                                   // Major.Minor Software version (use String 01.00 - 99.99 format !)
 
 // Power Source & Battery Level
 bool BattPowered = true;                                // Is the device battery powered?
@@ -50,6 +50,7 @@ struct __attribute__((__packed__)) strConfig {
   byte IP[4];
   byte Netmask[4];
   byte Gateway[4];
+  byte DNS_IP[4];
   char NTPServerName[128];
   long TimeZone;
   unsigned long Update_Time_Via_NTP_Every;
@@ -68,6 +69,7 @@ struct __attribute__((__packed__)) strConfig {
   bool SWITCH_Default;
   float Temp_Corr;
   float LDO_Corr;
+  bool GPS_HW;
 } config;
 
 
@@ -77,7 +79,7 @@ void config_defaults() {
     strcpy(config.DeviceName, "ESP_Generic");             // Device Name
     strcpy(config.Location, "MainRoom");                  // Device Location
     strcpy(config.ClientID, "001001");                    // Client ID (used on MQTT)
-    config.ONTime = 1;                                    // 0-255 seconds (Byte range)
+    config.ONTime = 0;                                    // 0-255 seconds (Byte range)
     config.SLEEPTime = 15;                                // 0-255 minutes (Byte range)
     config.DEEPSLEEP = true;                              // 0 - Disabled, 1 - Enabled
     config.LED = true;                                    // 0 - OFF, 1 - ON
@@ -93,6 +95,7 @@ void config_defaults() {
     config.IP[0] = 192; config.IP[1] = 168; config.IP[2] = 1; config.IP[3] = 10;
     config.Netmask[0] = 255; config.Netmask[1] = 255; config.Netmask[2] = 255; config.Netmask[3] = 0;
     config.Gateway[0] = 192; config.Gateway[1] = 168; config.Gateway[2] = 1; config.Gateway[3] = 254;
+    config.DNS_IP[0] = 192; config.DNS_IP[1] = 168; config.DNS_IP[2] = 1; config.DNS_IP[3] = 254;
     strcpy(config.NTPServerName, "pt.pool.ntp.org");      // NTP Server
     config.Update_Time_Via_NTP_Every = 1200;              // Time in minutes to re-sync the clock
     config.TimeZone = 0;                                  // -12 to 13. See Page_NTPSettings.h why using -120 to 130 on the code.
@@ -111,6 +114,7 @@ void config_defaults() {
     config.SWITCH_Default = false;                        // 0 - OFF, 1 - ON - Default SWITCH Status 
     config.Temp_Corr = 0.0;                               // Sensor Temperature Correction Factor, typically due to electronic self heat.
     config.LDO_Corr = 0.6;                                // Battery Voltage [volt] corrective Factor due to LDO/Diode voltage drop
+    config.GPS_HW = false;                                // Is GPS hardware used / connected?
 }
 
 // Libraries to INCLUDE
@@ -120,10 +124,11 @@ void config_defaults() {
 #include <mywifi.h>
 #include <sniffer.h>
 #include <telnet.h>
-#include <mqtt.h>
 #include <ntp.h>
+#include <mqtt.h>
 #include <ota.h>
 #include <ambient.h>
+#include <mygps.h>
 #include <web.h>
 #include <global.h>
 #include <project.h>
@@ -155,7 +160,6 @@ void setup() {
   // Start WiFi service (Station or/and as Access Point)
       wifi_setup();
 
-
   // Start TELNET service
       if (config.TELNET) telnet_setup();
 
@@ -178,8 +182,9 @@ void setup() {
 
 
   // Last bit of code before leave setup
-      ONTime_Offset = millis()/1000 + 0.1;  //  100ms after finishing the SETUP function it starts the "ONTime" countdown.
+      ONTime_Offset = millis() + 100;       //  100ms after finishing the SETUP function it starts the "ONTime" countdown.
                                             //  it should be good enough to receive the MQTT "ExtendONTime" msg
+
 } // end of setup()
 
 
@@ -196,11 +201,11 @@ void loop() {
   // TELNET handling
       if (config.TELNET) telnet_loop();
 
-  // MQTT handling
-      mqtt_loop();
-
   // NTP handling
       ntp_loop();
+
+  // MQTT handling
+      mqtt_loop();
 
   // OTA request handling
       if (config.OTA) ota_loop();
@@ -213,7 +218,6 @@ void loop() {
 
   // Global loops handling
       if (!A_STATUS) deepsleep_loop();
-      if (BattPowered && ((millis() - 2500) % 60000 < 15)) Batt_OK_check();    // If Batt LOW, it will DeepSleep forever!
-
+      if (BattPowered && ((millis() - 3500) % 60000 < 15)) Batt_OK_check();    // If Batt LOW, it will DeepSleep forever!
 
 }  // end of loop()

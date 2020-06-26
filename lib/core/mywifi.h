@@ -59,24 +59,26 @@ void wifi_connect() {
 
         if (config.STAMode) {
             // Handle DHCP, IP address and hostname for the shield
-            if (!config.DHCP) {
+            if (!config.DHCP || RTC_read()) {
+            //if (!config.DHCP) {
                 WiFi.persistent(true);                   // required for fast WiFi registration
                 // Static IP (No DHCP) may be handy for fast WiFi registration
                 IPAddress StaticIP(config.IP[0], config.IP[1], config.IP[2], config.IP[3]);
                 IPAddress Gateway(config.Gateway[0], config.Gateway[1], config.Gateway[2], config.Gateway[3]);
                 IPAddress Subnet(config.Netmask[0], config.Netmask[1], config.Netmask[2], config.Netmask[3]);
-                IPAddress DNS(config.Gateway[0], config.Gateway[1], config.Gateway[2], config.Gateway[3]);
+                IPAddress DNS(config.DNS_IP[0], config.DNS_IP[1], config.DNS_IP[2], config.DNS_IP[3]);
                 WiFi.config(StaticIP, Gateway, Subnet, DNS);
             };
             String host_name = String(config.Location + String("-") + config.DeviceName);
             WiFi.hostname(host_name.c_str());
             if( RTC_read() ) {
                 // The RTC data was good, make a quick connection
-                Serial.print("Connecting to WiFi network using RTD data... ");
+                Serial.print("Connecting to WiFi network using RTD data and Static IP... ");
                 WiFi.begin( config.ssid, config.WiFiKey, rtcData.LastWiFiChannel, rtcData.bssid, true );
-                WIFI_state = WiFi.waitForConnectResult(5000);
+                WIFI_state = WiFi.waitForConnectResult(2000);
                 if ( WIFI_state != WL_CONNECTED ) {
                     Serial.println(" ---ERROR!?!. Trying using config values. ");
+                    if (config.DHCP) WiFi.config(0,0,0,0);
                     WiFi.begin(config.ssid, config.WiFiKey);
                     WIFI_state = WiFi.waitForConnectResult(10000);
                 };

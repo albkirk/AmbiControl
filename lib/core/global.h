@@ -1,7 +1,7 @@
 void deepsleep_loop() {
-    if (config.DEEPSLEEP && (millis()/1000) > (ulong(config.ONTime) + ONTime_Offset + Extend_time)) {
+    if (config.DEEPSLEEP && millis() > ONTime_Offset + (ulong(config.ONTime) + Extend_time)*1000) {
         mqtt_publish(mqtt_pathtele(), "Status", "DeepSleep");
-        mqtt_unsubscribe(mqtt_pathconf(), "+");
+        //mqtt_unsubscribe(mqtt_pathconf(), "+");       // already included in mqtt_disconnect() function
         mqtt_disconnect();
         telnet_println("Going to sleep until next event... zzZz :) ");
         delay(100);

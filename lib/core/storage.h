@@ -4,8 +4,13 @@
  https://github.com/esp8266/Arduino/issues/1539
 */
 #include <EEPROM.h>
-#define EEPROMZize 4096                      // 256KB
-#define Mem_Start_Pos 1024                   // Memory starting point Position for the space to write/read data
+#define EEPROMZize 4096                     // 4KB
+#define Mem_Start_Pos 1024                  // Memory starting point Position for the space to write/read data
+
+#include <LittleFS.h>                       // Include the SPIFFS library
+#define MAX_File_Zize 131072                // 128KB
+#define Telemetry_FILE "/telemetry.txt"
+File Flash_file;
 
 //
 //  AUXILIAR functions to handle EEPROM
@@ -147,8 +152,9 @@ int storage_get_data(String *data_dest, int start_address = Mem_Start_Pos) {
         data_lenght = EEPROM.read(pointer);
     } while (data_lenght > 0 && EEPROM.read(pointer + data_lenght + 1) > 0);
 
-    Serial.printf("GET_DATA --> pointer: %d \t data Lenght: %d\n", pointer, data_lenght);
     if (pointer == start_address && data_lenght == 0 ) return 0;              // it means that there is no data stored
+    
+    Serial.printf("GET_DATA --> pointer: %d \t data Lenght: %d\n", pointer, data_lenght);
 
     char data_buff[data_lenght];
     for(size_t i = 0; i < data_lenght; i++) {
@@ -156,7 +162,7 @@ int storage_get_data(String *data_dest, int start_address = Mem_Start_Pos) {
     }
     data_buff[data_lenght] = 0;
     *data_dest = String(data_buff);
-    Serial.println(*data_dest);
+    //Serial.println(*data_dest);
     return pointer; 
 }
 
@@ -165,6 +171,46 @@ void storage_clean_data(int address) {
   if (address != 0) EEPROM.write(address, 0);
   EEPROM.commit();
 }
+
+
+bool flash_save_data(String *data_source, const char *path_name = Telemetry_FILE) {
+    Flash_file = LittleFS.open(path_name, "a");
+    if (!Flash_file) {
+        Serial.println("Unable To Open '" + String(path_name) + "' for Appending");
+        return false;
+    }
+    else if (Flash_file.size() >= MAX_File_Zize) {
+        Serial.println("File is already BIG!");
+        return false;
+    }
+    else {
+        Serial.println("Appending data to file '" + String(path_name) + "'");
+        Flash_file.println(*data_source);
+        Flash_file.close();
+        return true;
+    }
+}
+
+bool flash_get_data(String *data_dest, bool from_begin = true, const char *path_name = Telemetry_FILE) {
+    if (from_begin) {
+        Flash_file = LittleFS.open(path_name, "r");
+    }
+    if (!Flash_file) {
+        Serial.println("File '" + String(path_name) + "' not found");
+        return false;
+    }
+    else {
+        Serial.print("Getting data from file '" + String(path_name) + "'");
+        *data_dest = Flash_file.readStringUntil('\n');
+        //Serial.println("Data:  '" + *data_dest);
+        if(Flash_file.position() == Flash_file.size() ) {
+            Flash_file.close();
+            LittleFS.remove(path_name);
+        }
+        return true;
+    }
+
+}    
 
 
 void storage_reset() {
@@ -181,6 +227,7 @@ void storage_reset() {
 void storage_setup() {
     bool CFG_saved = false;
     EEPROM.begin(EEPROMZize);     // define an EEPROM space of 2048 Bytes to store data
+    LittleFS.begin();               // Start the SPI Flash Files System
     //storage_reset();            // Hack to reset storage during boot
     config_defaults();
     CFG_saved = storage_read();   //When a configuration exists, it uses stored values

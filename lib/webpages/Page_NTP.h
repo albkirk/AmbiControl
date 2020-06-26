@@ -101,14 +101,14 @@ void send_NTP_configuration_values_html()
 {
 
   getNTPtime();
-  curDateTime();  
+  curDateTime();
   String values ="";
   values += "ntpserver|" + (String) config.NTPServerName + "|input\n";
-  values += "update|" +  (String) config.Update_Time_Via_NTP_Every + "|input\n";
-  values += "tz|" +  (String) config.TimeZone + "|input\n";
-  values += "dst|" +  (String) (config.isDayLightSaving ? "checked" : "") + "|chk\n";
-  values += "sync|" +  (String) (NTP_Sync ? "checked" : "") + "|chk\n";
-  values += "x_ntp|" +  (String)   DateTime.year + "/" + (String)  DateTime.month + "/" + (String)  DateTime.day + "   " + (String) DateTime.hour + ":" + (String) + DateTime.minute +  ":"  + (String)  DateTime.second +  "|div\n";
+  values += "update|" + (String) config.Update_Time_Via_NTP_Every + "|input\n";
+  values += "tz|" + (String) config.TimeZone + "|input\n";
+  values += "dst|" + (String) (config.isDayLightSaving ? "checked" : "") + "|chk\n";
+  values += "sync|" + (String) (NTP_Sync ? "checked" : "") + "|chk\n";
+  values += "x_ntp|" + (String) WeekDays[DateTime.wday] + ", " + (String) DateTime.year + "/" + (String) DateTime.month + "/" + (String) DateTime.day + "   " + (String) DateTime.hour + ":" + (String) DateTime.minute + ":" + (String)  DateTime.second + "|div\n";
   MyWebServer.send ( 200, "text/plain", values);
   Serial.println(__FUNCTION__); 
 

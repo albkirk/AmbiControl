@@ -38,13 +38,6 @@ The suggested enclosure is shared in my Onshape CAD account:
 https://cad.onshape.com/documents/5abf8838a49b110243c2c383/w/94c9c8607583554f2e724389/e/0522379227c1ba5b54aa72e1
 
 
-## Future features!!
-	1. Buffer Telemetry until connection is available -- Done using EEPROM. Still Need to change to SPIFFS
+## Features
+	1. Buffer Telemetry until connection is available -- Done using SPIFFS
 	2. Add GPS to include geographical position
-
-
-## **WARNING**
-DO NOT USE THIS FILE IN PRODUCTION.
-
-Version 2.19 stress to much the ESP EEPROM by reading/writing telemetry data. The worst scenario is with unstable comunication
-(ex.: poor WiFi coverage).
