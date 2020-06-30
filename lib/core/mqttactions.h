@@ -108,8 +108,9 @@ void mqtt_setup() {
             mqtt_publish(mqtt_pathtele(), "SWVer", SWVer);
         }
         status_report();
-        mqtt_publish(mqtt_pathtele(), "RSSI", String(getRSSI()));
-        if(!RTC_read()) mqtt_publish(mqtt_pathtele(), "IP", WiFi.localIP().toString());
+        //mqtt_publish(mqtt_pathtele(), "RSSI", String(getRSSI()));
+        //mqtt_publish(mqtt_pathtele(), "IP", WiFi.localIP().toString());
+        mqtt_dump_data();
     }
     mqtt_setcallback();
 }
@@ -123,6 +124,8 @@ void mqtt_loop() {
             Serial.println( "in loop function MQTT ERROR! #: " + String(MQTT_errors) + "  ==> " + MQTT_state_string(MQTTclient.state()) );
             MQTT_LastTime = millis();
             mqtt_connect();
+            status_report();
+            mqtt_dump_data();
         }
     }
     yield();

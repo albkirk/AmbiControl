@@ -38,8 +38,8 @@ void send_Telemetry() {
     if (config.GPS_HW){
         gps_update();
         if (GPS_Valid){
-            telemetry_doc["Lat"] = String(GPS_Lat, 4).toFloat();
-            telemetry_doc["Lng"] = String(GPS_Lng, 4).toFloat();
+            telemetry_doc["Lat"] = String(GPS_Lat, 6).toFloat();
+            telemetry_doc["Lng"] = String(GPS_Lng, 6).toFloat();
         }
     }
 

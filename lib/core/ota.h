@@ -85,7 +85,8 @@ bool HTTPUpdate(bool sketch=true){
   }
 
 void ota_http_upg() {
-    if(HTTPUpdate(true)) mqtt_restart();
+    if (WIFI_state != WL_CONNECTED) telnet_println( "UPG ERROR! ==> WiFi NOT Connected!" );
+    else if(HTTPUpdate(true)) mqtt_restart();
 }
 
   // OTA commands to run on loop function.

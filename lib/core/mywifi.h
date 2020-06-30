@@ -80,7 +80,7 @@ void wifi_connect() {
                     Serial.println(" ---ERROR!?!. Trying using config values. ");
                     if (config.DHCP) WiFi.config(0,0,0,0);
                     WiFi.begin(config.ssid, config.WiFiKey);
-                    WIFI_state = WiFi.waitForConnectResult(10000);
+                    WIFI_state = WiFi.waitForConnectResult(5000);
                 };
             }
             else {

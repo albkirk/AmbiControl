@@ -14,7 +14,7 @@
 // HARWARE & SOFTWARE Version
 #define BRANDName "AlBros_Team"                         // Hardware brand name
 #define MODELName "AmbiSense_v2"                        // Hardware model name
-#define SWVer "03.06"                                   // Major.Minor Software version (use String 01.00 - 99.99 format !)
+#define SWVer "03.10"                                   // Major.Minor Software version (use String 01.00 - 99.99 format !)
 
 // Power Source & Battery Level
 bool BattPowered = true;                                // Is the device battery powered?
@@ -114,7 +114,7 @@ void config_defaults() {
     config.SWITCH_Default = false;                        // 0 - OFF, 1 - ON - Default SWITCH Status 
     config.Temp_Corr = 0.0;                               // Sensor Temperature Correction Factor, typically due to electronic self heat.
     config.LDO_Corr = 0.6;                                // Battery Voltage [volt] corrective Factor due to LDO/Diode voltage drop
-    config.GPS_HW = false;                                // Is GPS hardware used / connected?
+    config.GPS_HW = true;                                 // Is GPS hardware used / connected?
 }
 
 // Libraries to INCLUDE

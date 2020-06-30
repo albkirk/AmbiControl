@@ -19,6 +19,7 @@ Connect to Router with these settings:<br>
 <tr><td align="right">IP:     </td><td><input type="text" id="ip_0" name="ip_0" size="2">.<input type="text" id="ip_1" name="ip_1" size="2">.<input type="text" id="ip_2" name="ip_2" size="2">.<input type="text" id="ip_3" name="ip_3" size="2"></td></tr>
 <tr><td align="right">Netmask:</td><td><input type="text" id="nm_0" name="nm_0" size="2">.<input type="text" id="nm_1" name="nm_1" size="2">.<input type="text" id="nm_2" name="nm_2" size="2">.<input type="text" id="nm_3" name="nm_3" size="2"></td></tr>
 <tr><td align="right">Gateway:</td><td><input type="text" id="gw_0" name="gw_0" size="2">.<input type="text" id="gw_1" name="gw_1" size="2">.<input type="text" id="gw_2" name="gw_2" size="2">.<input type="text" id="gw_3" name="gw_3" size="2"></td></tr>
+<tr><td align="right">DNS IP: </td><td><input type="text" id="dn_0" name="dn_0" size="2">.<input type="text" id="dn_1" name="dn_1" size="2">.<input type="text" id="dn_2" name="dn_2" size="2">.<input type="text" id="dn_3" name="dn_3" size="2"></td></tr>
 <tr><td colspan="2" align="center"><input type="submit" style="width:150px" class="btn btn--m btn--blue" value="Save"></td></tr>
 </table>
 </form>
@@ -82,6 +83,7 @@ Connect to Router with these settings:<br>
 <tr><td align="right">IP:</td><td><span id="x_ip"></span></td></tr>
 <tr><td align="right">Netmask:</td><td><span id="x_netmask"></span></td></tr>
 <tr><td align="right">Gateway:</td><td><span id="x_gateway"></span></td></tr>
+<tr><td align="right">DNS IP:</td><td><span id="x_dns_ip"></span></td></tr>
 <tr><td colspan="2" align="center"><input type="submit" style="width:150px" class="btn btn--m btn--blue" value="Save"></td></tr>
 </table>
 </form>
@@ -168,6 +170,10 @@ void send_wireless_configuration_html()
 				if (MyWebServer.argName(i) == "gw_1") if (checkRange(MyWebServer.arg(i))) 	config.Gateway[1] =  MyWebServer.arg(i).toInt();
 				if (MyWebServer.argName(i) == "gw_2") if (checkRange(MyWebServer.arg(i))) 	config.Gateway[2] =  MyWebServer.arg(i).toInt();
 				if (MyWebServer.argName(i) == "gw_3") if (checkRange(MyWebServer.arg(i))) 	config.Gateway[3] =  MyWebServer.arg(i).toInt();
+				if (MyWebServer.argName(i) == "dn_0") if (checkRange(MyWebServer.arg(i))) 	config.DNS_IP[0] =  MyWebServer.arg(i).toInt();
+				if (MyWebServer.argName(i) == "dn_1") if (checkRange(MyWebServer.arg(i))) 	config.DNS_IP[1] =  MyWebServer.arg(i).toInt();
+				if (MyWebServer.argName(i) == "dn_2") if (checkRange(MyWebServer.arg(i))) 	config.DNS_IP[2] =  MyWebServer.arg(i).toInt();
+				if (MyWebServer.argName(i) == "dn_3") if (checkRange(MyWebServer.arg(i))) 	config.DNS_IP[3] =  MyWebServer.arg(i).toInt();
 			}
 
 		}
@@ -207,6 +213,7 @@ void send_wireless_configuration_values_html()
   		values += "x_ip|" +  (String) WiFi.localIP()[0] + "." +  (String) WiFi.localIP()[1] + "." +  (String) WiFi.localIP()[2] + "." + (String) WiFi.localIP()[3] +  "|div\n";
   		values += "x_gateway|" +  (String) WiFi.gatewayIP()[0] + "." +  (String) WiFi.gatewayIP()[1] + "." +  (String) WiFi.gatewayIP()[2] + "." + (String) WiFi.gatewayIP()[3] +  "|div\n";
   		values += "x_netmask|" +  (String) WiFi.subnetMask()[0] + "." +  (String) WiFi.subnetMask()[1] + "." +  (String) WiFi.subnetMask()[2] + "." + (String) WiFi.subnetMask()[3] +  "|div\n";
+  		values += "x_dns_ip|" +  (String) WiFi.dnsIP()[0] + "." +  (String) WiFi.dnsIP()[1] + "." +  (String) WiFi.dnsIP()[2] + "." + (String) WiFi.dnsIP()[3] +  "|div\n";
 	}
 	else {
 		values += "ip_0|" +  (String) config.IP[0] + "|input\n";
@@ -221,6 +228,10 @@ void send_wireless_configuration_values_html()
 		values += "gw_1|" +  (String) config.Gateway[1] + "|input\n";
 		values += "gw_2|" +  (String) config.Gateway[2] + "|input\n";
 		values += "gw_3|" +  (String) config.Gateway[3] + "|input\n";
+		values += "dn_0|" +  (String) config.DNS_IP[0] + "|input\n";
+		values += "dn_1|" +  (String) config.DNS_IP[1] + "|input\n";
+		values += "dn_2|" +  (String) config.DNS_IP[2] + "|input\n";
+		values += "dn_3|" +  (String) config.DNS_IP[3] + "|input\n";		
 	}
 	MyWebServer.send ( 200, "text/plain", values);
 	Serial.println(__FUNCTION__); 

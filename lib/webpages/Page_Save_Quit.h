@@ -37,6 +37,11 @@ function load(e,t,n){if("js"==t){var a=document.createElement("script");a.src=e,
 </script>
 )=====";
 
+const char PAGE_SaveAndQuit[] PROGMEM = R"=====(
+<meta http-equiv="refresh" content="5; URL=wireless.html">
+The Web Server is no longer enabled. Please, close this web page.
+)=====";
+
 
 //
 //  SEND HTML PAGE OR IF A FORM SUMBITTED VALUES, PROCESS THESE VALUES
@@ -52,6 +57,8 @@ void send_save_quit_html()
 void execute_save_quit_html()
 {
 		Serial.println("Web Page Save & Quit button pushed!!! ");
+ 		MyWebServer.send ( 200, "text/html", PAGE_SaveAndQuit );
+
     MyWebServer.stop();
     config.TELNET = false;
     config.OTA = false;

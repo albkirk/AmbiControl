@@ -25,6 +25,7 @@ boolean NTP_Sync = false;                     // NTP is synched?
 unsigned int NTP_Retry = 120;                 // Timer to retry the NTP connection
 unsigned long NTP_LastTime = 0;               // Last NTP connection attempt time stamp
 int NTP_errors = 0;                           // NTP errors Counter
+volatile unsigned long cur_utctime;           // Auxiliary var
 volatile unsigned long cur_unixtime;          // Auxiliary var
 static unsigned long ntpNOW = 0;              // Auxiliary var for millis
 
@@ -110,54 +111,75 @@ unsigned long adjustTimeZone(unsigned long _timeStamp, int _timeZone, bool _isDa
 
 
 void getNTPtime() {
-    UTCTimeStamp = 0;                        // Resetting value to 0
+    bool loop_timeOut = true;
     NTP_Sync = false;
+    unsigned long NTPTime = 0;                        // Resetting value to 0
 
     if (WIFI_state != WL_CONNECTED) telnet_println( "NTP ERROR! ==> WiFi NOT Connected!" );
     else {
         configTime(0, 0, config.NTPServerName);
         unsigned long start_sync = millis();
-        while ( !NTP_Sync ||  millis() - start_sync < 1000) {
-            UTCTimeStamp = time(nullptr);
+        loop_timeOut = false;
+        while ( !NTP_Sync && !loop_timeOut) {
+            NTPTime = time(nullptr);
             RefMillis = millis();                 // Exact moment that NTP data was retrived
-            if (UTCTimeStamp > 60) {
+            if (millis() - start_sync > 1000) loop_timeOut = true;
+            if (NTPTime > 31536000) NTP_Sync = true;
+            yield();
+        }
+        if (NTP_Sync) UTCTimeStamp = NTPTime;
+    }
+    if (ESPWakeUpReason() == "Deep-Sleep Wake" && loop_timeOut) {
+        UTCTimeStamp = rtcData.lastUTCTime + config.SLEEPTime * 60 + 1;   // + 1 is an empirical number to adjust the time error.
+        RefMillis = 0;
+    }
+    if (UTCTimeStamp > 31536000) {
                 //const unsigned long seventyYears = 2208988800UL;
                 //UTCTimeStamp = secsSince1900 - seventyYears;      // store "Coordinated Universal Time" (UTC) time stamp
                 UTCTimeStamp = UTCTimeStamp - RefMillis/1000;     // store UTC time stamp since millis() = 0 ... aka @ Boot time!
                 UnixTimeStamp = adjustTimeZone(UTCTimeStamp, config.TimeZone, config.isDayLightSaving);
-                NTP_Sync = true;
-            }
-            yield();
-        }
     }
 }
 
-unsigned long curUnixTime() {
+unsigned long curUTCTime() {
+    if (ntpNOW < RefMillis) {                       // If true, it would mean the millis() counter had looped. 
+        UTCTimeStamp = UTCTimeStamp + 4294967295;
+        NTP_Sync = false;
+    }
     ntpNOW = millis();
-    if (ntpNOW < RefMillis) {
-        UTCTimeStamp = UTCTimeStamp + 4294967;
+    cur_utctime = UTCTimeStamp + ntpNOW/1000;
+    //telnet_println("Current UTC time: " + String(cur_utctime));
+    return cur_utctime;
+}
+
+unsigned long curUnixTime() {
+    if (ntpNOW < RefMillis) {                       // If true, it would mean the millis() counter had looped. 
+        UTCTimeStamp = UTCTimeStamp + 4294967295;
         UnixTimeStamp = adjustTimeZone(UTCTimeStamp, config.TimeZone, config.isDayLightSaving);
         RefMillis = 0;
         NTP_Sync = false;
     }
+    ntpNOW = millis();
     cur_unixtime = UnixTimeStamp + ntpNOW/1000;
     //telnet_println("Current UNIX time: " + String(cur_unixtime));
     return cur_unixtime;
 }
 
-
-void curDateTime() {
+String curDateTime() {
+    String cdt_var = "";
     cur_unixtime = curUnixTime();
     DateTime = ConvertTimeStamp(cur_unixtime);
+    cdt_var =  String(WeekDays[DateTime.wday]) + ", " + String(DateTime.year) + "/" + String(DateTime.month) + "/" + String(DateTime.day);
+    cdt_var += "\t" + String(DateTime.hour) + ":" + String(DateTime.minute) + ":" + String(DateTime.second);
+    return cdt_var;
 }
 
 
 void ntp_setup () {
     getNTPtime();
     if (NTP_Sync) {
-        curDateTime();
-        telnet_println("Current Local Date: " + String(WeekDays[DateTime.wday]) + ", " + String(DateTime.year) + "/" + String(DateTime.month) + "/" + String(DateTime.day));
-        telnet_println("Current Local Time: " + String(DateTime.hour) + ":" + String(DateTime.minute) + ":" + String(DateTime.second));
+        
+        telnet_println("Current Local Date / Time: " + curDateTime());
    }
 }
 

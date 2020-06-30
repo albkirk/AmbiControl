@@ -129,7 +129,6 @@ void mqtt_connect() {
             telnet_println( "[DONE]" );
             //mqtt_subscribe(mqtt_pathconf(), "+");
             mqtt_subscribe(mqtt_pathconf(), "configure");
-            mqtt_dump_data();
         }
         else {
             MQTT_state = MQTTclient.state();
