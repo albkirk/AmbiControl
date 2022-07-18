@@ -1,21 +1,21 @@
 // MQTT Constants
-#define MQTT_new_MAX_PACKET_SIZE 256                // Default: 256 bytes
+#define MQTT_new_MAX_PACKET_SIZE 512                // Default: 256 bytes
 #define MQTT_new_KEEPALIVE 60                       // Default: 15 seconds
-#define MQTT_new_SOCKET_TIMEOUT 15                  // Default: 15 seconds
+#define MQTT_new_SOCKET_TIMEOUT 3                   // Default: 15 seconds
 #include <PubSubClient.h>
 
 
 // MQTT PATH Structure
-// /location/deviceName/<Param>                     --> typically, used when publishing info/status
-// /location/deviceName/configure                   --> typically, used when subscribing for actions
+// /ClientID/Location/DeviceName/telemetry/<Param>  --> typically, used when publishing info/status
+// /ClientID/Location/DeviceName/configure/<Param>  --> typically, used when subscribing for actions
 
 // EXAMPLEs
-// TOPIC                        MESSAGE
-// /outside/MailBox/Status      "Mains"                             --> Device status OK / LOWBat
-// /room/Estore/RSSI            -89                                 --> WiFi signal strength value in dBm
-// /kitchen/AmbiSense/BattLevel 33                                  --> Battery Level 0 - 100 %
-// /kitchen/AmbSense/configure  {param:"DeepSleep", value:false}    --> Set DeepSleep feature to Enabled - Disabled
-// /outside/MailBox/configure   {param:"LED", value:false}          --> Set True / False to turn LED ON/OFF
+// TOPIC                                           MESSAGE
+// /001001/Outside/MailBox/telemetry/Status        "Mains"                             --> Device status OK / LOWBat
+// /001001/Room/Estore/telemetry/RSSI              -89                                 --> WiFi signal strength value in dBm
+// /001001/kitchen/AmbiSense/telemetry/BattLevel   33                                  --> Battery Level 0 - 100 %
+// /001001/kitchen/AmbSense/configure/DeepSleep    {command:"DeepSleep", value:false}  --> Set DeepSleep feature to Enabled - Disabled
+// /001001/Outside/MailBox/configure/LED           {command:"LED", value:false}        --> Set True / False to turn LED ON/OFF
 
 
 // MQTT Variables
@@ -31,10 +31,13 @@ static const String MQTT_state_Name[] = {
     "MQTT_CONNECT_BAD_CREDENTIALS", // 4
     "MQTT_CONNECT_UNAUTHORIZED"     // 5
 };
+
 int16_t MQTT_state = MQTT_DISCONNECTED;             // MQTT state
 uint16_t MQTT_Retry = 125;                          // Timer to retry the MQTT connection
 uint16_t MQTT_errors = 0;                           // MQTT errors Counter
 uint32_t MQTT_LastTime = 0;                         // Last MQTT connection attempt time stamp
+static String mqtt_pathtele = "";                   // Topic path for publish information
+static String mqtt_pathconf = "";                   // Topic path for subcribe to commands
 
 
 #if MQTT_Secure
@@ -50,16 +53,6 @@ uint32_t MQTT_LastTime = 0;                         // Last MQTT connection atte
 // MQTT Functions //
 String  MQTT_state_string(int mqttstate = MQTT_state){
    return MQTT_state_Name[map(mqttstate, -4, 5, 0 , 9)];
-}
-
-
-String mqtt_pathtele() {
-  return ChipID + "/";
-}
-
-
-String mqtt_pathconf() {
-  return ChipID + "/";
 }
 
 
@@ -86,17 +79,14 @@ void mqtt_publish(String pubpath, String pubtopic, String pubvalue, boolean tore
 }
 
 
-void mqtt_dump_data() {
+void mqtt_dump_data(String subpath, String subtopic) {
     static String dumpvalue;                                       // mem space to handle msg payload
     bool first_time = true;
     while (flash_get_data(&dumpvalue, first_time)) {
-        mqtt_publish(mqtt_pathtele(), "Telemetry", dumpvalue);
+        mqtt_publish(subpath, subtopic, dumpvalue);
         first_time = false;
     } 
 }
-
-
-
 void mqtt_subscribe(String subpath, String subtopic) {
     String topic = "";
     topic += subpath; topic += subtopic;
@@ -113,7 +103,7 @@ void mqtt_unsubscribe(String subpath, String subtopic) {
 }
 
 
-void mqtt_connect() {
+void mqtt_connect(String Will_Topic = (mqtt_pathtele + "Status"), String Will_Msg = "UShut") {
     if (WIFI_state != WL_CONNECTED) telnet_println( "MQTT ERROR! ==> WiFi NOT Connected!" );
     else if (config.MQTT_Secure && !NTP_Sync) telnet_println( "MQTT ERROR! ==> NTP Required but NOT Sync!" );
     else {
@@ -123,12 +113,10 @@ void mqtt_connect() {
         MQTTclient.setSocketTimeout(MQTT_new_SOCKET_TIMEOUT);
         MQTTclient.setServer(config.MQTT_Server, config.MQTT_Port);
         // Attempt to connect (clientID, username, password, willTopic, willQoS, willRetain, willMessage, cleanSession)
-        if (MQTTclient.connect(ChipID.c_str(), config.MQTT_User, config.MQTT_Password, (mqtt_pathtele() + "Status").c_str(), 0, false, "UShut", true)) {
-        //if (MQTTclient.connect(ChipID.c_str())) {
+        if (MQTTclient.connect(ChipID.c_str(), config.MQTT_User, config.MQTT_Password, Will_Topic.c_str(), 0, false, Will_Msg.c_str(), true)) {
             MQTT_state = MQTT_CONNECTED;
             telnet_println( "[DONE]" );
-            //mqtt_subscribe(mqtt_pathconf(), "+");
-            mqtt_subscribe(mqtt_pathconf(), "configure");
+            mqtt_subscribe(mqtt_pathconf, "+");
         }
         else {
             MQTT_state = MQTTclient.state();
@@ -139,14 +127,22 @@ void mqtt_connect() {
 
 
 void mqtt_disconnect() {
-    mqtt_unsubscribe(mqtt_pathconf(), "+");
+    mqtt_unsubscribe(mqtt_pathconf, "+");
     MQTTclient.disconnect();
     MQTT_state = MQTT_DISCONNECTED;
     telnet_println("Disconnected from MQTT Broker.");
 }
 
 void mqtt_restart() {
-    mqtt_publish(mqtt_pathtele(), "Status", "Restarting");
+    mqtt_publish(mqtt_pathtele, "Status", "Restarting");
     mqtt_disconnect();
+    ESPRestart();
+}
+
+void mqtt_reset() {
+    mqtt_publish(mqtt_pathtele, "Status", "Reseting");
+    mqtt_disconnect();
+    storage_reset();
+    RTC_reset();
     ESPRestart();
 }

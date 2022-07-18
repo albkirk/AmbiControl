@@ -55,6 +55,61 @@ void storeStruct(void *data_source, size_t size, int start_address) {
 }
 
 
+//
+//  CONFIG Struct
+//
+struct __attribute__((__packed__)) strConfig {
+  char DeviceName[16];
+  char Location[16];
+  char ClientID[8];
+  byte ONTime;
+  byte SLEEPTime;
+  bool DEEPSLEEP;
+  bool LED;
+  bool TELNET;
+  bool OTA;
+  bool WEB;
+  bool Remote_Allow;
+  bool STAMode;
+  bool APMode;
+  char SSID[32];
+  char WiFiKey[32];
+  bool DHCP;
+  byte IP[4];
+  byte Netmask[4];
+  byte Gateway[4];
+  byte DNS_IP[4];
+  char NTPServerName[128];
+  long TimeZone;
+  unsigned long Update_Time_Via_NTP_Every;
+  bool isDayLightSaving;
+  char MQTT_Server[128];
+  long MQTT_Port;
+  bool MQTT_Secure;
+  char MQTT_User[32];
+  char MQTT_Password[32];
+  char UPDATE_Server[128];
+  long UPDATE_Port;
+  char UPDATE_User[16];
+  char UPDATE_Password[32];
+  char WEB_User[16];
+  char WEB_Password[32];
+  bool SWITCH_Default;
+  float Temp_Corr;
+  float LDO_Corr;
+  double Voltage_Multiplier;
+  double Current_Multiplier;
+  double Power_Multiplier;
+  bool HW_Module;
+} config;
+
+
+#include <def_conf.h>
+
+
+//
+//  STORAGE functions
+//
 void storage_print() {
 
   Serial.printf("Printing Config [%d bytes]\n", sizeof(config));
@@ -62,7 +117,7 @@ void storage_print() {
   Serial.printf("Device Name: %s and Location: %s\n", config.DeviceName, config.Location);
   Serial.printf("ON time[sec]: %d  -  SLEEP Time[min]: %d -  DEEPSLEEP enabled: %d\n", config.ONTime, config.SLEEPTime, config.DEEPSLEEP);
   Serial.printf("LED enabled: %d   -  TELNET enabled: %d  -  OTA enabled: %d  -  WEB enabled: %d\n", config.LED, config.TELNET, config.OTA, config.WEB);
-  Serial.printf("WiFi AP Mode: %d  -  WiFi STA Mode: %d   -  WiFi SSID: %s  -  WiFi Key: %s\n", config.APMode, config.STAMode, config.ssid, config.WiFiKey);
+  Serial.printf("WiFi AP Mode: %d  -  WiFi STA Mode: %d   -  WiFi SSID: %s  -  WiFi Key: %s\n", config.APMode, config.STAMode, config.SSID, config.WiFiKey);
   
   Serial.printf("DHCP enabled: %d\n", config.DHCP);
   if(!config.DHCP) {

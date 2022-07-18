@@ -150,7 +150,7 @@ void send_wireless_configuration_html()
 		config.APMode = false;
 		config.DHCP = false;
 		for ( uint8_t i = 0; i < MyWebServer.args(); i++ ) { 
-			if (MyWebServer.argName(i) == "ssid") strcpy(config.ssid,   urldecode(MyWebServer.arg(i)).c_str());
+			if (MyWebServer.argName(i) == "ssid") strcpy(config.SSID,   urldecode(MyWebServer.arg(i)).c_str());
 			if (MyWebServer.argName(i) == "WiFiKey" && urldecode(MyWebServer.arg(i)) != "") strcpy(config.WiFiKey, urldecode(MyWebServer.arg(i)).c_str());
 			if (MyWebServer.argName(i) == "STAEnabled") config.STAMode = true;
 			if (MyWebServer.argName(i) == "APEnabled") config.APMode = true;
@@ -204,7 +204,7 @@ void send_wireless_configuration_values_html()
 
 	String values ="";
 
-	values += "ssid|" + (String) config.ssid + "|input\n";
+	values += "ssid|" + (String) config.SSID + "|input\n";
 	//values += "WiFiKey|" +  (String) config.WiFiKey  + "|input\n";   // KEEP IT COMMENTED TO NOT SHOW THE WiFi KEY!!!
 	values += "STAEnabled|" + (String) (config.STAMode ? "checked" : "") + "|chk\n";
 	values += "APEnabled|" + (String) (config.APMode ? "checked" : "") + "|chk\n";

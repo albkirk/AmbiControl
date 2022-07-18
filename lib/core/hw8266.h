@@ -1,7 +1,7 @@
 //System Parameters
 #define ChipID HEXtoUpperString(ESP.getChipId(), 6)
 #define ESP_SSID String("ESP-" + ChipID)               // SSID used as Acces Point
-#define Number_of_measures 3                           // Number of value samples (measurements) to calculate average
+#define Number_of_measures 5                           // Number of value samples (measurements) to calculate average
 
 // The ESP8266 RTC memory is arranged into blocks of 4 bytes. The access methods read and write 4 bytes at a time,
 // so the RTC data structure should be padded to a 4-byte multiple.
@@ -23,8 +23,6 @@ struct __attribute__((__packed__)) struct_RTC {
 #define Batt_Min float(2.8)                 // Battery lowest voltage.   [v]
 #define Vcc float(3.3)                      // Theoretical/Typical ESP voltage. [v]
 #define VADC_MAX float(1.0)                 // Maximum ADC Voltage input
-float voltage = 0.0;                        // Input Voltage [v]
-float Batt_Level = 100.0;                   // Battery level [0%-100%]
 
 // Timers for millis used on Sleeping and LED flash
 unsigned long ONTime_Offset=0;              // [msec]
@@ -46,6 +44,7 @@ bool SWITCH = false;                        // [OFF / ON]
 bool SWITCH_Last = false;                   // [OFF / ON]
 unsigned long TIMER = 0;                    // [0-7200]  Minutes                 
 unsigned long TIMER_Last = 0;               // [0-7200]  Minutes                 
+static long TIMER_Current = 0;
 unsigned long COUNTER = 0;
 
 
@@ -157,17 +156,16 @@ void GoingToSleep(byte Time_minutes = 0, unsigned long currUTime = 0 ) {
     rtcData.lastUTCTime = currUTime;
     keep_IP_address();
     RTC_write();
-    ESP.deepSleep( Time_minutes * 60 * 1000000);          // time in minutes converted to microseconds
+    ESP.deepSleep( Time_minutes * 60 * 1000000);            // time in minutes converted to microseconds
 }
 
 
-float getVoltage() {
-    // return battery level in Percentage [0 - 100%]
-    voltage = 0;
+float getBattLevel() {                                      // return Battery level in Percentage [0 - 100%]
+    float voltage = 0.0;                                    // Input Voltage [v]
     for(int i = 0; i < Number_of_measures; i++) {
         if (Using_ADC) {voltage += analogRead(A0) * Vcc;}
-        else {voltage += ESP.getVcc();} // only later, the (final) measurement will be divided by 1000
-        delay(50);
+        else {voltage += ESP.getVcc();}         // only later, the (final) measurement will be divided by 1000
+        delay(1);
     };
     voltage = voltage / Number_of_measures;
     voltage = voltage / 1000.0 + config.LDO_Corr;
@@ -192,8 +190,7 @@ long getRSSI() {
 
 
 void ESPRestart() {
-    Serial.println("Restarting in 3 seconds...");
-    delay(3000);
+    Serial.println("Restarting ESP...");
     ESP.restart();
 }
 
@@ -204,18 +201,16 @@ String ESPWakeUpReason() {    // WAKEUP_REASON
 void FormatConfig() {                                   // WARNING!! To be used only as last resource!!!
     Serial.println(ESP.eraseConfig());
     RTC_reset();
-    delay(5000);
+    delay(100);
     ESP.reset();
 }
 
 void blink_LED(unsigned int slot, int bl_LED = LED_esp, bool LED_OFF = !config.LED) { // slot range 1 to 10 =>> 3000/300
     if (bl_LED>=0) {
         now_millis = millis() % Pace_millis;
-        if (now_millis > LED_millis*(slot-1) && now_millis < LED_millis*slot-LED_millis/2 ) {
-            digitalWrite(bl_LED, !LED_OFF);             // Turn LED on
-            delay(LED_millis/3);
-            digitalWrite(bl_LED, LED_OFF);              // Turn LED off
-        }
+        if (now_millis > LED_millis*(slot-1) && now_millis < LED_millis*slot-LED_millis/2) digitalWrite(bl_LED, !LED_OFF); // Turn LED on
+        now_millis = (millis()-LED_millis/3) % Pace_millis;
+        if (now_millis > LED_millis*(slot-1) && now_millis < LED_millis*slot-LED_millis/2) digitalWrite(bl_LED, LED_OFF); // Turn LED on
     }
 }
 

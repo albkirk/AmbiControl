@@ -124,7 +124,7 @@ void web_setup() {
 	  MyWebServer.onNotFound ( []() { MyWebServer.send ( 400, "text/html", "Page not Found" );   }  );
     MyWebServer.begin();
     Extend_time = 900;
-    Serial.println( "My Web server has started for 15 minutes" );
+    telnet_println("My Web server has started for " + String(Extend_time/60) + " minutes");
   }
   else {
     MyWebServer.close();

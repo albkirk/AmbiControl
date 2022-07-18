@@ -91,13 +91,13 @@ void send_general_html()
 
 	if (MyWebServer.args() > 0 )  // Save Settings
 	{
-		config.GPS_HW = false;
+		config.HW_Module = false;
 		String temp = "";
 		for ( uint8_t i = 0; i < MyWebServer.args(); i++ ) {
 			if (MyWebServer.argName(i) == "webusername") strcpy(config.WEB_User, urldecode(MyWebServer.arg(i)).c_str());
 			if (MyWebServer.argName(i) == "webpassword" && urldecode(MyWebServer.arg(i)) != "") strcpy(config.WEB_Password, urldecode(MyWebServer.arg(i)).c_str());
 			if (MyWebServer.argName(i) == "sltm") config.SLEEPTime =  MyWebServer.arg(i).toInt(); 
-			if (MyWebServer.argName(i) == "gps_hw") config.GPS_HW = true;
+			if (MyWebServer.argName(i) == "gps_hw") config.HW_Module = true;
 		}
 		storage_write();
 		firstStart = true;
@@ -127,7 +127,7 @@ void send_general_configuration_values_html()
  	if (GPS_Valid) values += "x_lat|" + String(GPS_Lat, 6) +  "|div\n";
  	if (GPS_Valid) values += "x_lng|" + String(GPS_Lng, 6) +  "|div\n";
  	if (GPS_Valid) values += "x_alt|" + String(GPS_Alt, 1) +  "|div\n";
-	values += "gps_hw|" + (String) (config.GPS_HW ? "checked" : "") + "|chk\n";
+	values += "gps_hw|" + (String) (config.HW_Module ? "checked" : "") + "|chk\n";
  	values += "sw_Version|" + String(SWVer) +  "|div\n";
  	values += "x_mac|" + GetMacAddress() +  "|div\n";
     values += "ap_ssid|" + ESP_SSID +  "|div\n";

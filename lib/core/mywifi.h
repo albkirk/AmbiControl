@@ -3,8 +3,7 @@
 extern "C" {
 #include "user_interface.h"
   typedef void (*freedom_outside_cb_t)(uint8 status);
-  int  wifi_regist
-  er_send_pkt_freedom_cb(freedom_outside_cb_t cb);
+  int  wifi_register_send_pkt_freedom_cb(freedom_outside_cb_t cb);
   void wifi_unregister_send_pkt_freedom_cb(void);
   int  wifi_send_pkt_freedom(uint8 *buf, int len, bool sys_seq);
 }
@@ -59,7 +58,7 @@ void wifi_connect() {
 
         if (config.STAMode) {
             // Handle DHCP, IP address and hostname for the shield
-            if (!config.DHCP || RTC_read()) {
+            if (  !config.DHCP || ( RTC_read() && (ESPWakeUpReason() == "Deep-Sleep Wake") )  ) {
             //if (!config.DHCP) {
                 WiFi.persistent(true);                   // required for fast WiFi registration
                 // Static IP (No DHCP) may be handy for fast WiFi registration
@@ -69,28 +68,28 @@ void wifi_connect() {
                 IPAddress DNS(config.DNS_IP[0], config.DNS_IP[1], config.DNS_IP[2], config.DNS_IP[3]);
                 WiFi.config(StaticIP, Gateway, Subnet, DNS);
             };
-            String host_name = String(config.Location + String("-") + config.DeviceName);
+            String host_name = String(config.DeviceName + String("-") + config.Location);
             WiFi.hostname(host_name.c_str());
-            if( RTC_read() ) {
+            if( RTC_read() && (ESPWakeUpReason() == "Deep-Sleep Wake") ) {
                 // The RTC data was good, make a quick connection
-                Serial.print("Connecting to WiFi network using RTD data and Static IP... ");
-                WiFi.begin( config.ssid, config.WiFiKey, rtcData.LastWiFiChannel, rtcData.bssid, true );
+                Serial.print("Waking from DeepSleep and connecting to WiFi using RTD data and Static IP... ");
+                WiFi.begin( config.SSID, config.WiFiKey, rtcData.LastWiFiChannel, rtcData.bssid, true );
                 WIFI_state = WiFi.waitForConnectResult(2000);
                 if ( WIFI_state != WL_CONNECTED ) {
                     Serial.println(" ---ERROR!?!. Trying using config values. ");
                     if (config.DHCP) WiFi.config(0,0,0,0);
-                    WiFi.begin(config.ssid, config.WiFiKey);
+                    WiFi.begin(config.SSID, config.WiFiKey);
                     WIFI_state = WiFi.waitForConnectResult(5000);
                 };
             }
             else {
                 // The RTC data was not valid, so make a regular connection
-                Serial.print("NO RTD data. Using config values ... ");
-                WiFi.begin(config.ssid, config.WiFiKey);
+                Serial.print("NO RTD data or NOT waking from DeepSleep. Using configured WiFi values ... ");
+                WiFi.begin(config.SSID, config.WiFiKey);
                 WIFI_state = WiFi.waitForConnectResult(10000);
             }
             if ( WIFI_state == WL_CONNECTED ) {
-                Serial.print("Connected to WiFi network! " + String(config.ssid) + " IP: "); Serial.println(WiFi.localIP());
+                Serial.print("Connected to WiFi network! " + String(config.SSID) + " IP: "); Serial.println(WiFi.localIP());
                 //rtcData.LastWiFiChannel = uint(wifi_get_channel);
                 //if (!MDNS.begin(host_name)) {             // Start the mDNS responder for "host_name.local" domain
                 //    Serial.println("Error setting up MDNS responder!");
@@ -101,7 +100,7 @@ void wifi_connect() {
         }
         if (config.APMode) {
             WiFi.softAP(ESP_SSID.c_str());
-            //WiFi.softAP(config.ssid);
+            //WiFi.softAP(config.SSID);
             Serial.print("WiFi in AP mode, with IP: "); Serial.println(WiFi.softAPIP());
         }
 //  }

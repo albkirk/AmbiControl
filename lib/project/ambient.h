@@ -100,7 +100,7 @@ float getTemperature() {
             // Check if any reads failed and exit.
             if (chk != 0) {
                 Serial.println("Failed to read temperature from DHT sensor!");
-                delay(1000);
+                delay(100);
                 //t = NULL;
                 n ++;
             }
@@ -137,7 +137,7 @@ float getHumidity() {
     // Check if any reads failed and exit.
     if (chk != 0) {
       Serial.println("Failed to read humidity from DHT sensor!");
-      delay(1000);
+      delay(100);
       //h = NULL;
       n ++;
     }
@@ -149,11 +149,12 @@ float getHumidity() {
 return -1;
 }
 
-float getLux (byte pin = 36, int Nmeasures = Number_of_measures, float Max_val = 910, float Min_val = 55) {
-    // 910 and 55 are empiric values extract while testing the circut
+float getLux (byte adc_pin = A0, int Nmeasures = Number_of_measures, float Max_val = 910, float Min_val = 55) {
+    // adc_pin A0 on ESP8266 and 35 or 36 on ESP32
+	// 910 and 55 are empiric values extract while testing the circut
     float lux = 0.0;
     for(int i = 0; i < Nmeasures; i++) {
-        lux += (Max_val - (float)analogRead(pin)) / (Max_val - Min_val) * 100;
+        lux += (Max_val - (float)analogRead(adc_pin)) / (Max_val - Min_val) * 100;
         //telnet_println("Sample-LUX: " + String(lux));
         delay(25);
     }
@@ -171,27 +172,37 @@ void ambient_get_data() {
     //Lux = getLux();
 }
 
+
 void ambient_send_data() {
     if ( Temperature == -100 ) {
             telnet_print("Temperatura: -- ERRO! -- \t");
-            mqtt_publish(mqtt_pathtele(), "Status", "ERRO-Temperatura");
+            mqtt_publish(mqtt_pathtele, "Status", "ERRO-Temperatura");
     } else {
             telnet_print("Temperatura: " + String(Temperature) + " C \t");
-            mqtt_publish(mqtt_pathtele(), "Temperatura", String(Temperature));
+            mqtt_publish(mqtt_pathtele, "Temperature", String(Temperature));
     };
 
     if ( Humidity == -1 ) {
             telnet_print("Humidade: -- ERRO! -- \t");
-            mqtt_publish(mqtt_pathtele(), "Status", "ERRO-Humidade");
+            mqtt_publish(mqtt_pathtele, "Status", "ERRO-Humidade");
     } else {
             telnet_print("Humidade: " + String(Humidity) + " % \t");
-            mqtt_publish(mqtt_pathtele(), "Humidade", String(Humidity));
+            mqtt_publish(mqtt_pathtele, "Humidity", String(Humidity));
     };
           
-    //telnet_print("Lux: " + String(Lux) + " % \t");
-    //mqtt_publish(mqtt_pathtele(), "Lux", String(Lux));
+    telnet_print("Lux: " + String(Lux) + " % \t");
+    mqtt_publish(mqtt_pathtele, "Lux", String(Lux));
     telnet_println("");
 }
+
+
+void ambient_data() {
+    if (DHTPIN>=0 || SDAPIN>=0) {
+        ambient_get_data();
+        ambient_send_data();
+    }
+}
+
 
 void ambient_setup() {
     if (DHTPIN>=0 || SDAPIN>=0) {
@@ -201,12 +212,5 @@ void ambient_setup() {
             //I2C_scan();
             Wire.begin(SDAPIN, SCKPIN);
         }
-    }
-}
-
-void ambient_data() {
-    if (DHTPIN>=0 || SDAPIN>=0) {
-        ambient_get_data();
-        ambient_send_data();
     }
 }
