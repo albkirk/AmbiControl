@@ -1,3 +1,5 @@
+#ifdef ESP8266
+
 #ifndef WIFISEC_H
 #define WIFISEC_H
 
@@ -45,4 +47,6 @@ private:
     BearSSL::PrivateKey PrivateClientKey;
 };
 
-#endif
+#endif      /* WIFISEC_H  */
+
+#endif      /*  ESP8266   */

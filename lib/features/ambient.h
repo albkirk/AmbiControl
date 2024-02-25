@@ -3,6 +3,10 @@
 #include <Wire.h>
 #include <AM2320.h>
 
+#ifdef ESP8266
+    #define Default_ADC_PIN A0
+#endif
+
 // Initialize DHT/AM sensor.
 #define DHT_11 1
 #define DHT_22 2
@@ -21,6 +25,7 @@ AM2320 am_val(&Wire);
 
 float Temperature = 0.0;                    // Variable
 float Humidity = 0.0;                       // Variable
+float HumVelocity = 0.0;                    // Variable
 float Lux = 0.0;                            // Variable
 float Tempe_MAX = -100.0;                   // Variable
 float Tempe_MIN = 100.0;                    // Variable
@@ -62,11 +67,11 @@ void I2C_scan() {
 }
 
 
-float getNTCThermister() {
+float getNTCThermister(byte adc_pin = Default_ADC_PIN) {
   // Return temperature as Celsius
   int val = 0;
   for(int i = 0; i < Number_of_measures; i++) {         // ADC value is read N times
-      val += analogRead(A0);
+      val += analogRead(adc_pin);
       delay(10);
   }
   val = val / Number_of_measures;
@@ -149,7 +154,7 @@ float getHumidity() {
 return -1;
 }
 
-float getLux (byte adc_pin = A0, int Nmeasures = Number_of_measures, float Max_val = 910, float Min_val = 55) {
+float getLux (byte adc_pin = Default_ADC_PIN, int Nmeasures = Number_of_measures, float Max_val = 910, float Min_val = 55) {
     // adc_pin A0 on ESP8266 and 35 or 36 on ESP32
 	// 910 and 55 are empiric values extract while testing the circut
     float lux = 0.0;
@@ -169,7 +174,7 @@ float getLux (byte adc_pin = A0, int Nmeasures = Number_of_measures, float Max_v
 void ambient_get_data() {
     Temperature = getTemperature();
     Humidity = getHumidity();
-    //Lux = getLux();
+    Lux = getLux();
 }
 
 

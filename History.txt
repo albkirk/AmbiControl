@@ -1,14 +1,8 @@
-v9 2018/11/29
-Brand / Model  Parameters (to be used on HTTP Upg)
-Adding HTTP Upgrade + (aligned with Node-RED) + customized version of "httpUpdate.h"
-customMQTT head file,
-adding ON-Time offset (to allow 0 sec on-time value via mqtt and not break the chance of getting the "extend msg")
-Adding NTP service
-
-v5 2018/02/22
-Using JSON for storage, but using Struct for running configuration (like it was used on v3)
-
-v4 2018/02/20
-Change Storage and running configuration to JSON
-NOT OK
-Crashing when changing LED status (or any other param) via MQTT command 
+V05.03
+24.02.05
+Move all Telemetry into a single JSON output 
+Added Humidity velocity concept.
+ 
+v05.02
+23.12.31
+Added humidity value on RTC Memory and waking up on every 2 minutes.
