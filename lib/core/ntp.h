@@ -124,7 +124,7 @@ void getNTPtime(unsigned long timeout_sync = 1000UL)
   unsigned long NTPTime = 0; // Resetting value to 0
 
   if (WIFI_state != WL_CONNECTED)
-    telnet_println("NTP ERROR! ==> NO WiFi connection!");
+    telnet_println("NTP ERROR! ==> NO Internet connection!");
   else
   {
     myconfigTime("TZ_Etc_UTC", config.NTPServerName, config.NTPServerName, config.NTPServerName);
@@ -144,10 +144,10 @@ void getNTPtime(unsigned long timeout_sync = 1000UL)
     {
       UTCTimeStamp = NTPTime;
       ntpNOW = millis();                     // To make sure that it 1st value is valid
-      telnet_println("NTP extracted from Internet.");
+      telnet_println("NTP extracted from Internet with SUCCESS!");
     }
   }
-  if (ESPWakeUpReason() == "Deep-Sleep Wake" && loop_timeOut)
+  if (ESPResetReason() == "Deep-Sleep Wake" && loop_timeOut)
   {
     UTCTimeStamp = rtcData.lastUTCTime + config.SLEEPTime * 60 + 1; // + 1 is an empirical number to adjust the time error.
     RefMillis = 0;
@@ -195,14 +195,19 @@ unsigned long curUnixTime()
   return cur_unixtime;
 }
 
+String printDateTime(unsigned long _timeStamp) {
+  strDateTime _tempDateTime = ConvertTimeStamp(_timeStamp);
+  String cdt_var = "";
+  cdt_var = String(WeekDays[_tempDateTime.wday]) + ", " + String(_tempDateTime.year) + "/" + leadzero(_tempDateTime.month) + "/" + leadzero(_tempDateTime.day);
+  cdt_var += "  " + leadzero(_tempDateTime.hour) + ":" + leadzero(_tempDateTime.minute) + ":" + leadzero(_tempDateTime.second);
+  return cdt_var;   
+}
+
 String curDateTime()
 {
-  String cdt_var = "";
   cur_unixtime = curUnixTime();
   DateTime = ConvertTimeStamp(cur_unixtime);
-  cdt_var = String(WeekDays[DateTime.wday]) + ", " + String(DateTime.year) + "/" + leadzero(DateTime.month) + "/" + leadzero(DateTime.day);
-  cdt_var += "  " + leadzero(DateTime.hour) + ":" + leadzero(DateTime.minute) + ":" + leadzero(DateTime.second);
-  return cdt_var;
+  return printDateTime(cur_unixtime);
 }
 
 void ntp_setup()

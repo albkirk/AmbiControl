@@ -1,5 +1,7 @@
 #include <ArduinoOTA.h>
 
+bool OTA_BUSY = false;            // To flag that is performing OTA
+
 
   void ota_setup() {
     if(config.OTA) {
@@ -11,13 +13,15 @@
         // ArduinoOTA.setHostname("my8266");
 
         // No authentication by default
-        ArduinoOTA.setPassword((const char *)"12345678");
+        ArduinoOTA.setPassword(config.DeviceName);
         // Password can be set with it's md5 value as well
         // MD5(admin) = 21232f297a57a5a743894a0e4a801fc3
         // ArduinoOTA.setPasswordHash("21232f297a57a5a743894a0e4a801fc3");
 
         ArduinoOTA.onStart([]() { // what to do before OTA download insert code here
           String type;
+          OTA_BUSY = true;            // To flag that is performing OTA
+          telnet_println("Getting BUSY on OTA...");
           if (ArduinoOTA.getCommand() == U_FLASH)
             type = "sketch";
           else // U_SPIFFS
@@ -33,8 +37,9 @@
         });
         ArduinoOTA.onEnd([]() {
             //hassio_delete();    // Uncomment this line to force the HASSIO discovery after the upgrade 
-            flash_LED(15);      // Flash board led 15 times at end
+            if(LED_ESP>=0) flash_LED(15);      // Flash board led 15 times at end
             telnet_println("\nOTA END with success!");
+            OTA_BUSY = false;
             global_restart("Upgraded");
         });
         ArduinoOTA.onError([](ota_error_t error) {
@@ -47,8 +52,11 @@
             ESPRestart();
         });
 
-        ArduinoOTA.begin();
-      telnet_println("Ready for OTA");
+      if (WIFI_state != WL_RADIO_OFF) {
+          ArduinoOTA.begin();
+          telnet_println("Ready for OTA");
+      }
+      else telnet_println("OTA NOT started -> Radio is OFF.");
     }
     else yield();
   }

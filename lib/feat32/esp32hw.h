@@ -24,13 +24,13 @@ String HEXtoUpperString(uint32_t hexval, uint hexlen);
 String ChipID=HEXtoUpperString(getChipId(), 6);
 #define ESP_SSID String("ESP-" + ChipID)    // SSID to use as Access Point
 #define Number_of_measures 5                // Number of value samples (measurements) to calculate average
-byte SLEEPTime = config.SLEEPTime;          // Variable to allow temporary change the sleeptime (ex.: = 0)
+unsigned long SLEEPTime = 0;                // Variable to allow temporary change the sleeptime (ex.: = 0)
 bool Celular_Connected = false;             // Modem Connection state
 
 
 // The ESP8266 RTC memory is arranged into blocks of 4 bytes. The access methods read and write 4 bytes at a time,
 // so the RTC data structure should be padded to a 4-byte multiple.
-struct __attribute__((__packed__, aligned(4))) struct_RTC {
+RTC_DATA_ATTR struct {
   uint32_t crc32 = 0U;                      // 4 bytes   
   unsigned long lastUTCTime = 0UL;          // 4 bytes
   uint8_t bssid[6];                         // 32 bytes
@@ -49,9 +49,6 @@ Preferences preferences;                    // Preferences library is wrapper ar
     ADC_MODE(ADC_VCC)                       // Get voltage from Internal ADC
 #endif
 */
-#ifndef Default_ADC_PIN
-    #define Default_ADC_PIN 36
-#endif
 
 // Initialize the Webserver
 WebServer MyWebServer(80);
@@ -142,15 +139,21 @@ void esp_wifi_disconnect() {
     WiFi.mode(WIFI_MODE_NULL);
 }
 
-void wifi_hostname() {
-    static char my_hostname[32] = {0,};
-    String host_name = String(config.DeviceName) + String("-") + String(config.Location);
-    snprintf(my_hostname, 32, "%s", host_name);
-    WiFi.setHostname(my_hostname);
+
+void esp_bt_connect() {
+    btStart();
+}
+
+void esp_bt_disconnect() {
+    btStop();
+}
+
+bool esp_bt_check() {
+    return btStarted();
 }
 
 uint8_t wifi_waitForConnectResult(unsigned long timeout) {
-    return WiFi.waitForConnectResult();
+    return WiFi.waitForConnectResult(timeout);
 }
 
 bool RTC_read()  {return false;}
@@ -191,11 +194,10 @@ bool RTC_write() {
     Serial.println("Write Last Date: " + String(rtcData.lastUTCTime));
     }
 
-// Write rtcData back to RTC memory
+    // Write rtcData back to RTC memory
     if (ESP.rtcUserMemoryWrite(0, (uint32_t*) &rtcData, sizeof(rtcData))) return true;
     else return false;
 }
-
 
 bool RTC_reset() {
 // Update rtcData structure
@@ -204,22 +206,15 @@ bool RTC_reset() {
     rtcData.crc32 = 0;
     rtcData.lastUTCTime = 0;
 
-// Write rtcData back to RTC memory
+    // Write rtcData back to RTC memory
     if (ESP.rtcUserMemoryWrite(0, (uint32_t*) &rtcData, sizeof(rtcData))) return true;
     else return false;
-}
-
-//  ESP8266
-void GoingToSleep(byte Time_minutes = 0, unsigned long currUTime = 0 ) {
-    rtcData.lastUTCTime = currUTime;
-    keep_IP_address();
-    RTC_write();
-    ESP.deepSleep( Time_minutes * 60 * 1000000);          // time in minutes converted to microseconds
 }
 */
 
 // ESP32
-void GoingToSleep(byte Time_minutes = 0, unsigned long currUTime = 0 ) {
+void esp_deepsleep(unsigned long Time_seconds = 0, unsigned long currUTime = 0) {
+    // https://espressif-docs.readthedocs-hosted.com/projects/arduino-esp32/en/latest/api/deepsleep.html
     uint64_t calculate_sleeptime;
   // Store counter to the Preferences
     preferences.putULong("UTCTime", currUTime);
@@ -229,12 +224,11 @@ void GoingToSleep(byte Time_minutes = 0, unsigned long currUTime = 0 ) {
     preferences.end();
 
   // Configure Wake Up
-    if ( Ext1WakeUP>=0 && (Time_minutes == 0 || Time_minutes > 5) ) {
+#ifndef ESP32C3
+    if ( Ext1WakeUP>=0 && (Time_seconds == 0 || Time_seconds > 300 ) ) {
         const uint64_t ext1_wakeup_pin_1_mask = 1ULL << Ext1WakeUP;      // -1 Warning during compilling
         //const uint64_t ext1_wakeup_pin_1_mask = Ext1WakeUP;
-#ifndef ESP32C3
         esp_sleep_enable_ext1_wakeup(ext1_wakeup_pin_1_mask, ESP_EXT1_WAKEUP_ALL_LOW);
-#endif
 //  Example using two PINs for external Wake UP 
 //      const int ext_wakeup_pin_1 = 2;
 //      const uint64_t ext_wakeup_pin_1_mask = 1ULL << ext_wakeup_pin_1;
@@ -242,58 +236,40 @@ void GoingToSleep(byte Time_minutes = 0, unsigned long currUTime = 0 ) {
 //      const uint64_t ext_wakeup_pin_2_mask = 1ULL << ext_wakeup_pin_2;
 //      printf("Enabling EXT1 wakeup on pins GPIO%d, GPIO%d\n", ext_wakeup_pin_1, ext_wakeup_pin_2);
 //      esp_sleep_enable_ext1_wakeup(ext_wakeup_pin_1_mask | ext_wakeup_pin_2_mask, ESP_EXT1_WAKEUP_ANY_HIGH);
-
     }
-#ifndef ESP32C3
     if (config.HW_Module) {
         if(config.DEBUG) Serial.println("Enabling ULP during deepsleep");
         ulp_action(1000000);                                       // 10 second loop
     }
+#else
+    if ( Ext1WakeUP>=0 && (Time_seconds == 0 || Time_seconds > 300) ) {
+        const uint64_t ext1_wakeup_pin_1_mask = 1ULL << Ext1WakeUP;      // -1 Warning during compilling
+        esp_deep_sleep_enable_gpio_wakeup(ext1_wakeup_pin_1_mask, ESP_GPIO_WAKEUP_GPIO_LOW);  //ESP_GPIO_WAKEUP_GPIO_LOW , ESP_GPIO_WAKEUP_GPIO_HIGH
+    }
 #endif
-    if (Time_minutes > 0) {
-        calculate_sleeptime = uint64_t( ((Time_minutes * 60000UL) - millis()%(Time_minutes * 60000UL)) ) * 1000ULL;
+
+    if (Time_seconds > 0) {
+        if (millis() < (Time_seconds * 1000UL)) {
+        calculate_sleeptime = uint64_t( ((Time_seconds * 1000UL) - millis()%(Time_seconds * 1000UL)) ) * 1000ULL;
         //Serial.printf("calculate_sleeptime :%llu\n", calculate_sleeptime);
+        }
+        else calculate_sleeptime = uint64_t(Time_seconds * 1000000UL);
         esp_sleep_enable_timer_wakeup(calculate_sleeptime);  // time in minutes converted to microseconds
     }
     esp_deep_sleep_start();
 }
 
 
-double ReadVoltage(byte pin){
-  double reading = analogRead(pin); // Reference voltage is 3v3 so maximum reading is 3v3 = 4095 in range 0 to 4095
-  if(reading < 1 || reading > 4095) return -1;
-  //return -0.000000000009824 * pow(reading,3) + 0.000000016557283 * pow(reading,2) + 0.000854596860691 * reading + 0.065440348345433;
-  return -0.000000000000016 * pow(reading,4) + 0.000000000118171 * pow(reading,3)- 0.000000301211691 * pow(reading,2)+ 0.001109019271794 * reading + 0.034143524634089;
-} // Added an improved polynomial, use either, comment out as required
-
-
-float getBattLevel() {                                      // return Battery level in Percentage [0 - 100%]
-#ifdef IP5306
-    float tempval;
-    float value = -2;
-    for(int i = 0; i < Number_of_measures; i++) {
-        tempval = float(getBatteryLevel());
-        if (tempval > value) value = tempval;
-        delay(10);
-    }
-    return value;
-#else
-    float voltage = 0.0;                                    // Input Voltage [v]
-    for(int i = 0; i < Number_of_measures; i++) {
-        voltage += ReadVoltage(Default_ADC_PIN);
-        delay(1);
-    }
-    voltage = voltage / Number_of_measures;
-    voltage = (voltage * 2) + config.LDO_Corr;              // "* 2" multiplier required when using a 50K + 50K Resistor divider between VCC and ADC. 
-    if (config.DEBUG) Serial.println("Averaged and Corrected Voltage: " + String(voltage));
-    /*
-    if (voltage > Batt_Max ) {
-        if (config.DEBUG) Serial.println("Voltage will be truncated to Batt_Max: " + String(Batt_Max));
-        voltage = Batt_Max;
-    }
-    */
-    return ((voltage - Batt_Min) / (Batt_Max - Batt_Min)) * 100.0;
-#endif
+float ReadVoltage(){
+    double reading = analogRead(Batt_ADC_PIN); // Reference voltage is 3v3 so maximum reading is 3v3 = 4095 in range 0 to 4095
+    float weighted_reading = 0;
+    if(reading < 1 || reading > 4095) return -1;
+    //weighted_reading = return -0.000000000009824 * pow(reading,3) + 0.000000016557283 * pow(reading,2) + 0.000854596860691 * reading + 0.065440348345433;
+    weighted_reading = -0.000000000000016 * pow(reading,4) + 0.000000000118171 * pow(reading,3)- 0.000000301211691 * pow(reading,2)+ 0.001109019271794 * reading + 0.034143524634089;
+    // Added an improved polynomial, use either, comment out as required
+    // https://github.com/G6EJD/ESP32-ADC-Accuracy-Improvement-function/blob/master/ESP32_ADC_Read_Voltage_Accurate.ino
+    if(Res_Div) return weighted_reading * Res_High / Res_Lower + weighted_reading;
+    else return weighted_reading;
 }
 
 long getRSSI() {
@@ -314,13 +290,13 @@ void ESPRestart() {
     esp_restart();
 }
 
-static const String RESET_REASON_to_string[] = {
+static const String RESET_REASON_to_string[] = {            // RESET_REASON
     "NO_MEAN",                 /**<=  0, OK*/
     "POWERON_RESET",           /**<=  1, Vbat power on reset*/
     "SW_RESET",                /**<=  3, Software reset digital core*/
     "OWDT_RESET",              /**<=  4, Legacy watch dog reset digital core*/
     "Deep-Sleep Wake",         /**<=  5, Deep Sleep reset digital core  original msg -> "DEEPSLEEP_RESET"*/
-    "SDIO_RESET",              /**<=  6, Reset by SLC module, reset digital core*/
+    "Deep-Sleep Wake",         /**<=  "SDIO_RESET" 6, Reset by SLC module, reset digital core*/  
     "TG0WDT_SYS_RESET",        /**<=  7, Timer Group0 Watch dog reset digital core*/
     "TG1WDT_SYS_RESET",        /**<=  8, Timer Group1 Watch dog reset digital core*/
     "RTCWDT_SYS_RESET",        /**<=  9, RTC Watch dog Reset digital core*/
@@ -333,8 +309,28 @@ static const String RESET_REASON_to_string[] = {
     "RTCWDT_RTC_RESET"         /**<= 16  RTC Watch dog reset digital core and rtc module*/
 };
 
-String ESPWakeUpReason() {    // WAKEUP_REASON
+String ESPResetReason() {                                   // RESET_REASON
   return RESET_REASON_to_string[rtc_get_reset_reason(0)];
+}
+
+static const String SLEEP_WAKEUP_to_string[] = {            // esp_sleep_wakeup_t
+    "ESP_SLEEP_WAKEUP_UNDEFINED",       //!< In case of deep sleep, reset was not caused by exit from deep sleep
+    "ESP_SLEEP_WAKEUP_ALL",             //!< Not a wakeup cause, used to disable all wakeup sources with esp_sleep_disable_wakeup_source
+    "ESP_SLEEP_WAKEUP_EXT0",            //!< Wakeup caused by external signal using RTC_IO
+    "ESP_SLEEP_WAKEUP_EXT1",            //!< Wakeup caused by external signal using RTC_CNTL
+    "ESP_SLEEP_WAKEUP_TIMER",           //!< Wakeup caused by timer
+    "ESP_SLEEP_WAKEUP_TOUCHPAD",        //!< Wakeup caused by touchpad
+    "ESP_SLEEP_WAKEUP_ULP",             //!< Wakeup caused by ULP program
+    "ESP_SLEEP_WAKEUP_GPIO",            //!< Wakeup caused by GPIO (light sleep only on ESP32, S2 and S3)
+    "ESP_SLEEP_WAKEUP_UART",            //!< Wakeup caused by UART (light sleep only)
+    "ESP_SLEEP_WAKEUP_WIFI",            //!< Wakeup caused by WIFI (light sleep only)
+    "ESP_SLEEP_WAKEUP_COCPU",           //!< Wakeup caused by COCPU int
+    "ESP_SLEEP_WAKEUP_COCPU_TRAP_TRIG", //!< Wakeup caused by COCPU crash
+    "ESP_SLEEP_WAKEUP_BT",              //!< Wakeup caused by BT (light sleep only)
+};
+
+String SleepWakeUpReason() {                                  // esp_sleep_wakeup_t
+    return SLEEP_WAKEUP_to_string[esp_sleep_get_wakeup_cause()];
 }
 
 String Flash_Size() {
@@ -371,10 +367,18 @@ void hw_setup() {
 
 
   // ADC setup
-    analogSetPinAttenuation(Default_ADC_PIN,ADC_11db);   // ADC_11db provides an attenuation so that IN/OUT = 1 / 3.6.
-                                                         // An input of 3 volts is reduced to 0.833 volts before ADC measurement
-    adcAttachPin(Default_ADC_PIN);                       // S_VP  -- GPIO36, ADC_PRE_AMP, ADC1_CH0, RTC_GPIO0
-
+  // Attenuation  input range:  ESP32           ESP32-C3        
+  // ADC_0db                    100 ~ 950 mV    0 ~ 750 mV
+  // ADC_2_5db                  100 ~ 1250 mV   0 ~ 1050 mV
+  // ADC_6db                    150 ~ 1750 mV   0 ~ 1300 mV
+  // ADC_11db                   150 ~ 2450 mV   0 ~ 2500 mV
+  // https://docs.espressif.com/projects/esp-idf/en/v4.4.3/esp32/api-reference/peripherals/adc.html
+  // https://docs.espressif.com/projects/esp-idf/en/v4.4.2/esp32c3/api-reference/peripherals/adc.html
+    if (Batt_ADC_PIN>=0) {
+        analogSetPinAttenuation(Batt_ADC_PIN,ADC_11db);   // ADC_11db provides an attenuation so that IN/OUT = 1 / 3.6.
+                                                          // An input of 3 volts is reduced to 0.833 volts before ADC measurement
+        adcAttachPin(Batt_ADC_PIN);                       // Pin defined in def_conf.h
+    }
   // Disable BT (most of project won't use it) to save battery.
   //  esp_bt_controller_disable();
 

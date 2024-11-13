@@ -26,6 +26,9 @@ void telnet_print(String msg, bool Forced = false) {
 		}
 }
 
+void console_prompt() {
+	telnet_print( String(config.DeviceName) + String("> "), true);
+}
 
 void telnet_println(String msg, bool Forced = false) {
 		if (config.DEBUG || Forced) {
@@ -56,7 +59,7 @@ void telnet_stop() {
 
 
 void telnet_setup() {
-    if (WIFI_state != WL_CONNECTED) telnet_println( "Telnet ERROR! ==> NO WiFi connection!" );
+    if (WIFI_state != WL_CONNECTED) telnet_println( "Telnet ERROR! ==> NO Internet connection!" );
     else {
 		if (config.TELNET){
 	   		//start Telnet service
@@ -69,7 +72,6 @@ void telnet_setup() {
 	}
 }
 
-void console_prompt() {
-	String prmptln;
-	telnet_print( String(config.DeviceName) + String("> "), true);
-}
+
+// telnet_loop() {}  ->located in lib/core/actions.h to be declared at the end of the program.
+// serial_loop() {}  ->located in lib/core/actions.h to be declared at the end of the program.

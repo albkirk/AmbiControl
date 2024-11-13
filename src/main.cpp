@@ -2,12 +2,13 @@
  * * Main File to trigger all C code using "arduino" style.
  * * It contains all necessary function calls on setup and loop functions
  * * HOW TO USE THIS TEMPLATE:
- * * -- Adjust the parameter below to your project.
- * *    Parameters on struct "config" will be store on memory.
- * *    Don't forget to customize the Mem read and write actions on "lib/project/custostore.h"
- * * -- Use the "// **** Normal code ..." zones to add you own definition, functions, setup and loop code
- * * -- You can also add you own MQTT actions on "lib/project/customqtt.h"
+ * * -- Keep this file as is. and use the lib/project/project.h 
+ * *    Use the "// **** Normal code ..." zones to add you own definition, functions, setup and loop code
  * * -- Suggest to use "lib/project/" to add your own h files
+ * * -- Adjust the PIN numbering  in lib/project/def_conf.h
+ * * -- Adjust the "default.config" in lib/project/def_conf.h
+ * * -- Add you own HASSIO discovery declaration on "lib/project/custohassio.h"
+ * * -- Add you own MQTT actions on "lib/project/customactions.h"
  */
 
 // Libraries to INCLUDE
@@ -15,7 +16,7 @@
 
 #ifdef ESP32
     #include <esp32hw.h>
-#else 
+#else
     #include <hw8266.h>
 #endif
 
@@ -29,9 +30,9 @@
 #include <ntp.h>
 #include <mqtt.h>
 #include <global.h>
+#include <ota.h>
 #include <peripherals.h>
 #include <hassio.h>
-#include <ota.h>
 #ifndef ESP8285
     #include <web.h>
 #endif
@@ -47,11 +48,12 @@ void setup() {
       //Serial.begin(74880);                  // This odd baud speed will shows ESP8266 boot diagnostics too.
       Serial.begin(115200);                 // For faster communication use 115200
       //Serial.setTimeout(1000);
+      //Serial.setDebugOutput(false);
 
       Serial.println("");
-      Serial.println("Hello World!");
+      Serial.println(" -- Hello World! -- ");
       Serial.println("My ID is " + ChipID + " and I'm running version " + SWVer);
-      Serial.println("Reset reason: " + ESPWakeUpReason());
+      Serial.println("Reset reason: " + ESPResetReason());
 
   // Start Storage service and read stored configuration
       storage_setup();
@@ -72,22 +74,22 @@ void setup() {
   // Start TELNET console service
       telnet_setup();
 
-  // Start NTP service
-      ntp_setup();
-
  // Start MQTT service
       mqtt_setup();
 
   // Start OTA service
       ota_setup();
 
+  // Start NTP service
+      ntp_setup();
+
+  // **** Project SETUP Sketch code here...
+      project_setup();
+
 #ifndef ESP8285
   // Start ESP Web Service
       if (config.WEB) web_setup();
 #endif
-
-  // **** Project SETUP Sketch code here...
-      project_setup();
 
   // with all setup tasks done it's time to prompt!
       console_prompt();
@@ -114,14 +116,14 @@ void loop() {
   // TELNET handling
       if (config.TELNET) telnet_loop();
 
-  // NTP handling
-      ntp_loop();
-
   // MQTT handling
       mqtt_loop();
 
   // OTA request handling
       if (config.OTA) ota_loop();
+
+  // NTP handling
+      ntp_loop();
 
 #ifndef ESP8285
   // ESP Web Server requests handling
@@ -132,7 +134,6 @@ void loop() {
       project_loop();
 
   // Global loops handling
-      deepsleep_loop();
-      if (BattPowered && ((millis() - 3500) % 60000 < 5)) Batt_OK_check();    // If Batt LOW, it will DeepSleep forever!
-
+    global_loop();
+    
 }  // end of loop()
