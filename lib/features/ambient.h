@@ -152,12 +152,12 @@ float getHumidity() {
 return -1;
 }
 
-float getLux (byte adc_pin = LUX_ADC_PIN, int Nmeasures = Number_of_measures, float Max_val = 3050, float Min_val = 0) {
+float getLux (byte adc_pin = LUX_ADC_PIN, int Nmeasures = Number_of_measures, float Max_val = 910, float Min_val = 55) {
     // adc_pin A0 on ESP8266 and 35 or 36 on ESP32
 	// 910 and 55 are empiric values extract while testing the circut
     float lux = 0.0;
     for(int i = 0; i < Nmeasures; i++) {
-        lux += (Max_val - (float)analogRead(adc_pin)) / (Max_val - Min_val) * 100;
+        lux += (Max_val - (float)analogRead(adc_pin)) / (Max_val - Min_val) * 100;  // still missing the Min_val factor correction in the formula
         //telnet_println("Sample-LUX: " + String(lux));
         delay(25);
     }

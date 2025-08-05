@@ -18,7 +18,7 @@ void send_Telemetry() {
     telemetry_doc["Illuminance"] = String(Lux, 2);    
     telemetry_doc["HumVelocity"] = String(HumVelocity, 2);     // Delta Humdity per minute
     telemetry_doc["Interval"] = String(rtcData.ByteValue*config.DEEPSLEEP);
-    if (config.HW_Module){
+    #ifdef GPS_Enabled
         gps_update();
         if (GPS_Valid){
             telemetry_doc["Sat"] = String(GPS_Sat).toInt();
@@ -26,7 +26,7 @@ void send_Telemetry() {
             telemetry_doc["Lng"] = String(GPS_Lng, 6).toFloat();
             telemetry_doc["Speed"] = String(GPS_Speed, 1).toFloat();
         }
-    }
+    #endif
 
     serializeJson(telemetry_doc, telemetry_jsonString);             //Serialize JSON data to string
     //telnet_println("Telemetry: " + String(telemetry_jsonString));

@@ -1,6 +1,7 @@
 // Declare and define here all sensors and actuators used in this project
 // **** Periphericals definition here ...
 #ifdef ModelVariant
+   #define Batt_Lux_Switch
    #define FET_Control_Pin 4                 // Base of Transistor connected to PIN GPIO4, acting as Switch
 #else
    #define FET_Control_Pin 0                 // MOSFET controlled by PIN GPIO0, acting as Wake trigger mask
@@ -22,7 +23,7 @@ void custom_ambient_get_data() {
 #endif
    ambient_get_data();
 #ifdef ModelVariant
-    digitalWrite(FET_Control_Pin, LOW);   // Set ADC Switch to LOW to sample Voltage (BC547 Cut)
+    digitalWrite(FET_Control_Pin, LOW);   // Set ADC Switch to LOW to sample Battery (BC547 Cut)
     telnet_println("ADC Switch in VOLTAGE position");
 #endif
 }

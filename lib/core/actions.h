@@ -42,7 +42,7 @@ void on_message(const char* topic, byte* payload, unsigned int msg_length) {
     if ( command == "DEEPSLEEP" && cmd_value !="") { config.DEEPSLEEP = bool(cmd_value.toInt()); storage_write(); mqtt_publish(mqtt_pathcomd, "DEEPSLEEP", "", true); mqtt_publish(mqtt_pathtele, "DEEPSLEEP", String(config.DEEPSLEEP));}
     if ( command == "SLEEPTime" && cmd_value !="" && cmd_value.toInt() >= 0) { config.SLEEPTime = byte(cmd_value.toInt()); SLEEPTime = config.SLEEPTime * 60UL; storage_write(); mqtt_publish(mqtt_pathcomd, "SLEEPTime", "", true); }
     if ( command == "ONTime") { config.ONTime = byte(cmd_value.toInt());storage_write(); }
-    if ( command == "ExtendONTime") if (bool(cmd_value.toInt()) == true) Extend_time = 60; else Extend_time = 0;
+    if ( command == "ExtendONTime") { if (bool(cmd_value.toInt()) == true) Extend_time = 60; else Extend_time = 0; }
     if ( command == "LED") {config.LED = bool(cmd_value.toInt()); mqtt_publish(mqtt_pathtele, "LED", String(config.LED));}
     if ( command == "TELNET" && cmd_value !="") { config.TELNET = bool(cmd_value.toInt()); storage_write(); mqtt_publish(mqtt_pathcomd, "TELNET", "", true); telnet_setup(); }
     if ( command == "OTA" && cmd_value !="") { config.OTA = bool(cmd_value.toInt()); storage_write(); mqtt_publish(mqtt_pathcomd, "OTA", "", true); global_restart(); }
@@ -151,6 +151,7 @@ void on_message(const char* topic, byte* payload, unsigned int msg_length) {
             telnet_println("Modem State: " + Modem_state_Name[Modem_state] + "\t REG State: " + RegStatus_string(modem.getRegistrationStatus()));
         #endif
         state_update();
+        mqtt_publish(mqtt_pathcomd, "Info", "", true); 
     }
     if ( command == "Config" && bool(cmd_value.toInt()) ) {
         mqtt_publish(mqtt_pathtele, "OTA", String(config.OTA));

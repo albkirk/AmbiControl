@@ -13,7 +13,7 @@ void project_setup() {
     rtcData.ByteValue = 0;
     rtcData.FloatValue = Humidity;
     //custom_ambient_send_data();       // or ambient_data() to run ambient_get_data() again
-    send_Telemetry();                   // Used for CGE-Vodafone project
+    send_Telemetry();                   // Read and send all Sensors' data in a single MQTT message
 }
 
 void project_loop() {
